@@ -1,6 +1,8 @@
 
 import { useState } from 'react';
 import { generatePaymentReference } from '../utils/paymentReference';
+import { localStorageManager } from '../utils/localStorage';
+import { mockApiService } from '../services/mockApi';
 
 interface PaymentData {
   service: string;
@@ -30,6 +32,8 @@ export const usePaymentProcessing = () => {
     setIsProcessing(true);
     
     try {
+      console.log('Starting payment processing:', params);
+      
       // Generate unique payment reference
       const reference = generatePaymentReference();
       
@@ -42,29 +46,36 @@ export const usePaymentProcessing = () => {
         timestamp: new Date().toISOString(),
       };
 
-      // Store payment data in localStorage (in real app, this would be sent to backend)
-      localStorage.setItem(`payment_${reference}`, JSON.stringify(paymentData));
-      
-      console.log('Payment data stored:', paymentData);
+      // Save payment data using localStorage manager
+      const saved = localStorageManager.savePayment({
+        ...paymentData,
+        status: 'pending'
+      });
 
-      // Simulate payment gateway redirect URL generation
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      if (!saved) {
+        throw new Error('Failed to save payment data');
+      }
+
+      // Initialize payment with mock API
+      const apiResponse = await mockApiService.initializePayment(paymentData);
       
-      // In a real implementation, this would call your backend API
-      // which would then redirect to the actual payment gateway
-      const redirectUrl = `/payment/gateway?ref=${reference}`;
+      if (!apiResponse.success || !apiResponse.data) {
+        throw new Error(apiResponse.error || 'Failed to initialize payment');
+      }
+
+      console.log('Payment initialization successful:', apiResponse.data);
       
       return {
         success: true,
         reference,
-        redirectUrl
+        redirectUrl: apiResponse.data.redirectUrl
       };
       
     } catch (error) {
       console.error('Payment processing error:', error);
       return {
         success: false,
-        error: 'Failed to process payment. Please try again.'
+        error: error instanceof Error ? error.message : 'Failed to process payment. Please try again.'
       };
     } finally {
       setIsProcessing(false);
@@ -72,36 +83,41 @@ export const usePaymentProcessing = () => {
   };
 
   const getPaymentData = (reference: string): PaymentData | null => {
-    try {
-      const stored = localStorage.getItem(`payment_${reference}`);
-      return stored ? JSON.parse(stored) : null;
-    } catch {
-      return null;
-    }
+    const stored = localStorageManager.getPayment(reference);
+    return stored ? {
+      service: stored.service,
+      amount: stored.amount,
+      reference: stored.reference,
+      customerData: stored.customerData,
+      timestamp: stored.timestamp
+    } : null;
   };
 
   const completePayment = (reference: string, status: 'success' | 'failed', transactionId?: string) => {
-    try {
-      const paymentData = getPaymentData(reference);
-      if (paymentData) {
-        const completedPayment = {
-          ...paymentData,
-          status,
-          transactionId,
-          completedAt: new Date().toISOString()
-        };
-        localStorage.setItem(`payment_${reference}`, JSON.stringify(completedPayment));
-        console.log('Payment completed:', completedPayment);
-      }
-    } catch (error) {
-      console.error('Error completing payment:', error);
+    const updated = localStorageManager.updatePaymentStatus(reference, status, transactionId);
+    if (updated) {
+      console.log('Payment status updated:', { reference, status, transactionId });
+    } else {
+      console.error('Failed to update payment status:', reference);
     }
+  };
+
+  // Cleanup old payments periodically
+  const cleanupOldPayments = () => {
+    return localStorageManager.cleanupOldPayments();
+  };
+
+  // Get payment history
+  const getPaymentHistory = () => {
+    return localStorageManager.getAllPayments();
   };
 
   return {
     processPayment,
     getPaymentData,
     completePayment,
+    cleanupOldPayments,
+    getPaymentHistory,
     isProcessing
   };
 };

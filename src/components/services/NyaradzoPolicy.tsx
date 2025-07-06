@@ -2,9 +2,11 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { usePayment } from '../../contexts/PaymentContext';
+import { usePaymentProcessing } from '../../hooks/usePaymentProcessing';
 import { validatePolicyNumber, validateZimMobileNumber } from '../../utils/validators';
 import FormField from '../FormField';
 import LoadingButton from '../LoadingButton';
+import { Shield } from 'lucide-react';
 
 interface NyaradzoPolicyForm {
   policyNumber: string;
@@ -14,15 +16,28 @@ interface NyaradzoPolicyForm {
 
 const NyaradzoPolicy: React.FC = () => {
   const { state, dispatch } = usePayment();
+  const { processPayment, isProcessing } = usePaymentProcessing();
   const { register, handleSubmit, formState: { errors } } = useForm<NyaradzoPolicyForm>();
 
   const onSubmit = async (data: NyaradzoPolicyForm) => {
     dispatch({ type: 'SET_LOADING', payload: true });
     
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      console.log('Processing Nyaradzo payment:', data);
-      dispatch({ type: 'SET_LOADING', payload: false });
+      const result = await processPayment({
+        service: 'Nyaradzo Policy',
+        amount: data.amount,
+        customerData: {
+          policyNumber: data.policyNumber,
+          phoneNumber: data.phoneNumber,
+          serviceType: 'insurance'
+        }
+      });
+
+      if (result.success && result.redirectUrl) {
+        window.location.href = result.redirectUrl;
+      } else {
+        dispatch({ type: 'SET_ERROR', payload: result.error || 'Payment processing failed' });
+      }
     } catch (error) {
       dispatch({ type: 'SET_ERROR', payload: 'Payment processing failed. Please try again.' });
     }
@@ -38,7 +53,7 @@ const NyaradzoPolicy: React.FC = () => {
           ←
         </button>
         <div className="w-12 h-12 bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center">
-          <span className="text-white font-bold">🛡️</span>
+          <Shield className="w-6 h-6 text-white" />
         </div>
         <div className="ml-3">
           <h2 className="text-xl font-semibold text-gray-900">Nyaradzo Policy</h2>
@@ -94,10 +109,10 @@ const NyaradzoPolicy: React.FC = () => {
         />
 
         <LoadingButton
-          isLoading={state.isLoading}
+          isLoading={state.isLoading || isProcessing}
           className="bg-gradient-to-r from-indigo-500 to-indigo-600 hover:shadow-lg"
         >
-          Make Payment
+          {state.isLoading || isProcessing ? 'Processing...' : 'Make Payment'}
         </LoadingButton>
       </form>
     </div>

@@ -1,10 +1,12 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { usePayment } from '../../contexts/PaymentContext';
+import { usePaymentProcessing } from '../../hooks/usePaymentProcessing';
 import { validateEconetNumber } from '../../utils/validators';
 import FormField from '../FormField';
 import LoadingButton from '../LoadingButton';
+import { Smartphone } from 'lucide-react';
 
 interface EconetDataForm {
   phoneNumber: string;
@@ -13,7 +15,10 @@ interface EconetDataForm {
 
 const EconetData: React.FC = () => {
   const { state, dispatch } = usePayment();
-  const { register, handleSubmit, formState: { errors } } = useForm<EconetDataForm>();
+  const { processPayment, isProcessing } = usePaymentProcessing();
+  const { register, handleSubmit, formState: { errors }, watch } = useForm<EconetDataForm>();
+
+  const selectedBundle = watch('bundle');
 
   const dataBundles = [
     { id: '1hour', name: '1 Hour bundle – Peak 960 MB / Off‑peak 240 MB', price: 1.00 },
@@ -41,13 +46,33 @@ const EconetData: React.FC = () => {
     { id: 'data30gb', name: 'Data 30 GB + YoPlay', price: 38.00 },
   ];
 
+  const getSelectedBundlePrice = () => {
+    const bundle = dataBundles.find(b => b.id === selectedBundle);
+    return bundle?.price || 0;
+  };
+
   const onSubmit = async (data: EconetDataForm) => {
     dispatch({ type: 'SET_LOADING', payload: true });
     
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      console.log('Processing Econet Data payment:', data);
-      dispatch({ type: 'SET_LOADING', payload: false });
+      const bundlePrice = getSelectedBundlePrice();
+      const selectedBundleInfo = dataBundles.find(b => b.id === data.bundle);
+      
+      const result = await processPayment({
+        service: 'Econet Data Bundles',
+        amount: bundlePrice,
+        customerData: {
+          phoneNumber: data.phoneNumber,
+          bundle: selectedBundleInfo?.name || data.bundle,
+          serviceType: 'data'
+        }
+      });
+
+      if (result.success && result.redirectUrl) {
+        window.location.href = result.redirectUrl;
+      } else {
+        dispatch({ type: 'SET_ERROR', payload: result.error || 'Payment processing failed' });
+      }
     } catch (error) {
       dispatch({ type: 'SET_ERROR', payload: 'Payment processing failed. Please try again.' });
     }
@@ -63,7 +88,7 @@ const EconetData: React.FC = () => {
           ←
         </button>
         <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
-          <span className="text-white font-bold">📱</span>
+          <Smartphone className="w-6 h-6 text-white" />
         </div>
         <div className="ml-3">
           <h2 className="text-xl font-semibold text-gray-900">Econet Data Bundles</h2>
@@ -114,10 +139,10 @@ const EconetData: React.FC = () => {
         </FormField>
 
         <LoadingButton
-          isLoading={state.isLoading}
+          isLoading={state.isLoading || isProcessing}
           className="bg-gradient-to-r from-purple-500 to-purple-600 hover:shadow-lg"
         >
-          Make Payment
+          {state.isLoading || isProcessing ? 'Processing...' : `Pay $${getSelectedBundlePrice().toFixed(2)}`}
         </LoadingButton>
       </form>
     </div>

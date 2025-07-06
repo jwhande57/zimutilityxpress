@@ -2,9 +2,11 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { usePayment } from '../../contexts/PaymentContext';
+import { usePaymentProcessing } from '../../hooks/usePaymentProcessing';
 import { validateTelOneAccount, validateZimMobileNumber } from '../../utils/validators';
 import FormField from '../FormField';
 import LoadingButton from '../LoadingButton';
+import { Wifi } from 'lucide-react';
 
 interface TelOneBroadbandForm {
   accountNumber: string;
@@ -14,7 +16,10 @@ interface TelOneBroadbandForm {
 
 const TelOneBroadband: React.FC = () => {
   const { state, dispatch } = usePayment();
-  const { register, handleSubmit, formState: { errors } } = useForm<TelOneBroadbandForm>();
+  const { processPayment, isProcessing } = usePaymentProcessing();
+  const { register, handleSubmit, formState: { errors }, watch } = useForm<TelOneBroadbandForm>();
+
+  const selectedBundle = watch('bundle');
 
   const bundles = [
     { id: 'bronze', name: 'Bronze 25 GB Day + 25 GB Night', price: 10.00 },
@@ -33,13 +38,34 @@ const TelOneBroadband: React.FC = () => {
     { id: 'voicenet', name: 'Voice On‑Net', price: 5.00 },
   ];
 
+  const getSelectedBundlePrice = () => {
+    const bundle = bundles.find(b => b.id === selectedBundle);
+    return bundle?.price || 0;
+  };
+
   const onSubmit = async (data: TelOneBroadbandForm) => {
     dispatch({ type: 'SET_LOADING', payload: true });
     
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      console.log('Processing TelOne payment:', data);
-      dispatch({ type: 'SET_LOADING', payload: false });
+      const bundlePrice = getSelectedBundlePrice();
+      const selectedBundleInfo = bundles.find(b => b.id === data.bundle);
+      
+      const result = await processPayment({
+        service: 'TelOne Broadband',
+        amount: bundlePrice,
+        customerData: {
+          accountNumber: data.accountNumber,
+          bundle: selectedBundleInfo?.name || data.bundle,
+          phoneNumber: data.phoneNumber,
+          serviceType: 'broadband'
+        }
+      });
+
+      if (result.success && result.redirectUrl) {
+        window.location.href = result.redirectUrl;
+      } else {
+        dispatch({ type: 'SET_ERROR', payload: result.error || 'Payment processing failed' });
+      }
     } catch (error) {
       dispatch({ type: 'SET_ERROR', payload: 'Payment processing failed. Please try again.' });
     }
@@ -55,7 +81,7 @@ const TelOneBroadband: React.FC = () => {
           ←
         </button>
         <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center">
-          <span className="text-white font-bold">🌐</span>
+          <Wifi className="w-6 h-6 text-white" />
         </div>
         <div className="ml-3">
           <h2 className="text-xl font-semibold text-gray-900">TelOne Broadband</h2>
@@ -119,10 +145,10 @@ const TelOneBroadband: React.FC = () => {
         />
 
         <LoadingButton
-          isLoading={state.isLoading}
+          isLoading={state.isLoading || isProcessing}
           className="bg-gradient-to-r from-green-500 to-green-600 hover:shadow-lg"
         >
-          Make Payment
+          {state.isLoading || isProcessing ? 'Processing...' : `Pay $${getSelectedBundlePrice().toFixed(2)}`}
         </LoadingButton>
       </form>
     </div>

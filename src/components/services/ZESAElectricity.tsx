@@ -6,6 +6,7 @@ import { usePaymentProcessing } from '../../hooks/usePaymentProcessing';
 import { validateMeterNumber, validateZimMobileNumber } from '../../utils/validators';
 import FormField from '../FormField';
 import LoadingButton from '../LoadingButton';
+import { Zap } from 'lucide-react';
 
 interface ZESAElectricityForm {
   meterNumber: string;
@@ -55,7 +56,7 @@ const ZESAElectricity: React.FC = () => {
           ←
         </button>
         <div className="w-12 h-12 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl flex items-center justify-center">
-          <span className="text-white font-bold">⚡</span>
+          <Zap className="w-6 h-6 text-white" />
         </div>
         <div className="ml-3">
           <h2 className="text-xl font-semibold text-gray-900">ZESA Electricity</h2>

@@ -6,6 +6,7 @@ import { usePaymentProcessing } from '../../hooks/usePaymentProcessing';
 import { validateEconetNumber } from '../../utils/validators';
 import FormField from '../FormField';
 import LoadingButton from '../LoadingButton';
+import { PhoneCall } from 'lucide-react';
 
 interface EconetAirtimeForm {
   phoneNumber: string;
@@ -54,7 +55,7 @@ const EconetAirtime: React.FC = () => {
           ←
         </button>
         <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
-          <span className="text-white font-bold">E</span>
+          <PhoneCall className="w-6 h-6 text-white" />
         </div>
         <div className="ml-3">
           <h2 className="text-xl font-semibold text-gray-900">Econet Airtime</h2>
