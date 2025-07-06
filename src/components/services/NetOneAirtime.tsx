@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { usePayment } from '../../contexts/PaymentContext';
+import { usePaymentProcessing } from '../../hooks/usePaymentProcessing';
 import { validateNetOneNumber } from '../../utils/validators';
 import FormField from '../FormField';
 import LoadingButton from '../LoadingButton';
@@ -12,6 +13,7 @@ interface NetOneAirtimeForm {
 
 const NetOneAirtime: React.FC = () => {
   const { state, dispatch } = usePayment();
+  const { processPayment, isProcessing } = usePaymentProcessing();
   const [selectedAmount, setSelectedAmount] = useState<number>(1);
   
   const { register, handleSubmit, formState: { errors } } = useForm<NetOneAirtimeForm>();
@@ -22,9 +24,20 @@ const NetOneAirtime: React.FC = () => {
     dispatch({ type: 'SET_LOADING', payload: true });
     
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      console.log('Processing NetOne Airtime payment:', { ...data, amount: selectedAmount });
-      dispatch({ type: 'SET_LOADING', payload: false });
+      const result = await processPayment({
+        service: 'NetOne Airtime',
+        amount: selectedAmount,
+        customerData: {
+          phoneNumber: data.phoneNumber,
+          serviceType: 'airtime'
+        }
+      });
+
+      if (result.success && result.redirectUrl) {
+        window.location.href = result.redirectUrl;
+      } else {
+        dispatch({ type: 'SET_ERROR', payload: result.error || 'Payment processing failed' });
+      }
     } catch (error) {
       dispatch({ type: 'SET_ERROR', payload: 'Payment processing failed. Please try again.' });
     }
@@ -91,10 +104,10 @@ const NetOneAirtime: React.FC = () => {
         </div>
 
         <LoadingButton
-          isLoading={state.isLoading}
+          isLoading={state.isLoading || isProcessing}
           className="bg-gradient-to-r from-red-500 to-red-600 hover:shadow-lg"
         >
-          Make Payment - ${selectedAmount.toFixed(2)}
+          {state.isLoading || isProcessing ? 'Processing...' : `Pay $${selectedAmount.toFixed(2)}`}
         </LoadingButton>
       </form>
     </div>

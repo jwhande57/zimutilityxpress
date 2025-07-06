@@ -2,17 +2,18 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { usePayment } from '../../contexts/PaymentContext';
+import { usePaymentProcessing } from '../../hooks/usePaymentProcessing';
 import { validateEconetNumber } from '../../utils/validators';
 import FormField from '../FormField';
 import LoadingButton from '../LoadingButton';
 
 interface EconetAirtimeForm {
   phoneNumber: string;
-  amount: number;
 }
 
 const EconetAirtime: React.FC = () => {
   const { state, dispatch } = usePayment();
+  const { processPayment, isProcessing } = usePaymentProcessing();
   const [selectedAmount, setSelectedAmount] = useState<number>(1);
   
   const { register, handleSubmit, formState: { errors } } = useForm<EconetAirtimeForm>();
@@ -23,15 +24,21 @@ const EconetAirtime: React.FC = () => {
     dispatch({ type: 'SET_LOADING', payload: true });
     
     try {
-      // Simulate payment processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // In real app, redirect to payment gateway
-      console.log('Processing Econet Airtime payment:', { ...data, amount: selectedAmount });
-      
-      dispatch({ type: 'SET_LOADING', payload: false });
-      // Redirect to payment gateway here
-      
+      const result = await processPayment({
+        service: 'Econet Airtime',
+        amount: selectedAmount,
+        customerData: {
+          phoneNumber: data.phoneNumber,
+          serviceType: 'airtime'
+        }
+      });
+
+      if (result.success && result.redirectUrl) {
+        // Redirect to payment gateway
+        window.location.href = result.redirectUrl;
+      } else {
+        dispatch({ type: 'SET_ERROR', payload: result.error || 'Payment processing failed' });
+      }
     } catch (error) {
       dispatch({ type: 'SET_ERROR', payload: 'Payment processing failed. Please try again.' });
     }
@@ -111,10 +118,10 @@ const EconetAirtime: React.FC = () => {
         </div>
 
         <LoadingButton
-          isLoading={state.isLoading}
+          isLoading={state.isLoading || isProcessing}
           className="bg-gradient-to-r from-blue-500 to-blue-600 hover:shadow-lg"
         >
-          Make Payment - ${selectedAmount.toFixed(2)}
+          {state.isLoading || isProcessing ? 'Processing...' : `Pay $${selectedAmount.toFixed(2)}`}
         </LoadingButton>
       </form>
     </div>
