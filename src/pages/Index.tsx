@@ -1,5 +1,7 @@
 
 import React from 'react';
+import { Link } from 'react-router-dom';
+import { MessageCircle, Phone, Wifi, Zap, Shield } from 'lucide-react';
 import { PaymentProvider, usePayment } from '../contexts/PaymentContext';
 import ServiceCard from '../components/ServiceCard';
 import EconetAirtime from '../components/services/EconetAirtime';
@@ -46,6 +48,19 @@ const MainContent: React.FC = () => {
       {/* Header */}
       <div className="bg-white shadow-sm">
         <div className="max-w-md mx-auto px-4 py-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">🇿🇼</span>
+              <span className="text-sm text-gray-600">Zimbabwe</span>
+            </div>
+            <Link
+              to="/support"
+              className="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors"
+            >
+              <MessageCircle size={20} />
+              <span className="text-sm">Support</span>
+            </Link>
+          </div>
           <h1 className="text-2xl font-bold text-gray-900 text-center">
             Zim Mobile Payments
           </h1>
@@ -62,7 +77,7 @@ const MainContent: React.FC = () => {
             id="econet-airtime"
             title="Econet Airtime"
             description="Top up your Econet mobile line instantly"
-            icon={<span className="text-white text-xl font-bold">E</span>}
+            icon={<Phone className="text-white" size={24} />}
             gradient="bg-gradient-to-r from-blue-500 to-blue-600"
           />
           
@@ -70,7 +85,7 @@ const MainContent: React.FC = () => {
             id="netone-airtime"
             title="NetOne Airtime"
             description="Top up your NetOne mobile line instantly"
-            icon={<span className="text-white text-xl font-bold">N</span>}
+            icon={<Phone className="text-white" size={24} />}
             gradient="bg-gradient-to-r from-red-500 to-red-600"
           />
           
@@ -78,7 +93,7 @@ const MainContent: React.FC = () => {
             id="econet-data"
             title="Econet Data Bundles"
             description="Purchase data, voice, SMS and WhatsApp bundles"
-            icon={<span className="text-white text-xl">📱</span>}
+            icon={<Wifi className="text-white" size={24} />}
             gradient="bg-gradient-to-r from-purple-500 to-purple-600"
           />
           
@@ -86,7 +101,7 @@ const MainContent: React.FC = () => {
             id="zesa-electricity"
             title="ZESA Electricity"
             description="Buy prepaid electricity tokens"
-            icon={<span className="text-white text-xl">⚡</span>}
+            icon={<Zap className="text-white" size={24} />}
             gradient="bg-gradient-to-r from-yellow-500 to-yellow-600"
           />
           
@@ -94,7 +109,7 @@ const MainContent: React.FC = () => {
             id="telone-broadband"
             title="TelOne Broadband"
             description="Purchase TelOne internet packages"
-            icon={<span className="text-white text-xl">🌐</span>}
+            icon={<Wifi className="text-white" size={24} />}
             gradient="bg-gradient-to-r from-green-500 to-green-600"
           />
           
@@ -102,7 +117,7 @@ const MainContent: React.FC = () => {
             id="nyaradzo-policy"
             title="Nyaradzo Policy"
             description="Pay your life assurance policy premiums"
-            icon={<span className="text-white text-xl">🛡️</span>}
+            icon={<Shield className="text-white" size={24} />}
             gradient="bg-gradient-to-r from-indigo-500 to-indigo-600"
           />
         </div>
@@ -110,9 +125,16 @@ const MainContent: React.FC = () => {
 
       {/* Footer */}
       <div className="max-w-md mx-auto px-4 pb-8 text-center">
-        <p className="text-gray-500 text-sm">
+        <p className="text-gray-500 text-sm mb-4">
           Secure payments • 24/7 service • Instant processing
         </p>
+        <Link
+          to="/support"
+          className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors text-sm"
+        >
+          <MessageCircle size={16} />
+          Need help? Contact Support
+        </Link>
       </div>
     </div>
   );
