@@ -84,7 +84,7 @@ const ContactSupport: React.FC = () => {
             </div>
             <div className="flex items-center gap-3">
               <Mail className="text-blue-500" size={16} />
-              <span className="text-sm">support@zimpay.co.zw</span>
+              <span className="text-sm">support@domain.co.zw</span>
             </div>
             <div className="flex items-center gap-3">
               <Clock className="text-orange-500" size={16} />
