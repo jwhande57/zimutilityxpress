@@ -62,8 +62,6 @@ const PaymentFailed: React.FC = () => {
             <h4 className="font-medium text-yellow-800 mb-2">Common Issues:</h4>
             <ul className="text-sm text-yellow-700 space-y-1 text-left">
               <li>• Insufficient funds</li>
-              <li>• Incorrect card details</li>
-              <li>• Card expired or blocked</li>
               <li>• Network connectivity issues</li>
             </ul>
           </div>
