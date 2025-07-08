@@ -62,7 +62,7 @@ const MainContent: React.FC = () => {
             </Link>
           </div>
           <h1 className="text-2xl font-bold text-gray-900 text-center">
-          <span className="text-2xl">🇿🇼 </span>Utility Xpress
+          Utility Xpress
           </h1>
           <p className="text-gray-600 text-center mt-2">
             Top up, pay bills, and purchase services instantly
