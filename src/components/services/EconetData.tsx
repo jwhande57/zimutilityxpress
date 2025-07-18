@@ -6,7 +6,7 @@ import { usePaymentProcessing } from '../../hooks/usePaymentProcessing';
 import { validateEconetNumber } from '../../utils/validators';
 import FormField from '../FormField';
 import LoadingButton from '../LoadingButton';
-import { Smartphone } from 'lucide-react';
+import { Smartphone , ArrowLeft} from 'lucide-react';
 
 interface EconetDataForm {
   phoneNumber: string;
@@ -85,11 +85,9 @@ const EconetData: React.FC = () => {
           onClick={() => dispatch({ type: 'SELECT_SERVICE', payload: null })}
           className="mr-4 p-2 hover:bg-gray-100 rounded-full"
         >
-          ←
+          <ArrowLeft size={18} />
         </button>
-        <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
-          <Smartphone className="w-6 h-6 text-white" />
-        </div>
+       
         <div className="ml-3">
           <h2 className="text-xl font-semibold text-gray-900">Econet Data Bundles</h2>
           <p className="text-gray-600">Purchase data, voice, SMS and WhatsApp bundles</p>

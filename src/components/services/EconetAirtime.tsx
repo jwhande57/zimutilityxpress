@@ -6,7 +6,9 @@ import { usePaymentProcessing } from '../../hooks/usePaymentProcessing';
 import { validateEconetNumber } from '../../utils/validators';
 import FormField from '../FormField';
 import LoadingButton from '../LoadingButton';
-import { Phone } from 'lucide-react';
+import { Phone,ArrowLeft } from 'lucide-react';
+import econetLogo from "../../assets/econet.png";
+
 
 /**
  * Econet Airtime Form Interface
@@ -79,36 +81,29 @@ const EconetAirtime: React.FC = () => {
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-6">
+    <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 w-full max-w-xl mx-auto">
       {/* Header Section with Back Button and Service Info */}
-      <div className="flex items-center mb-6">
-        {/* Back Button - Returns to service selection */}
+      <div className="flex flex-wrap items-center mb-6">
         <button
           onClick={() => dispatch({ type: 'SELECT_SERVICE', payload: null })}
-          className="mr-4 p-2 hover:bg-gray-100 rounded-full"
+          className="mr-4 mb-2 sm:mb-0 p-2 hover:bg-gray-100 rounded-full"
         >
-          ←
+          <ArrowLeft size={18} />
         </button>
-        
-        {/* Service Icon */}
-        <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
-          <Phone className="w-6 h-6 text-white" />
-        </div>
-        
-        {/* Service Information */}
+  
         <div className="ml-3">
-          <h2 className="text-xl font-semibold text-gray-900">Econet Airtime</h2>
-          <p className="text-gray-600">Top up your Econet line</p>
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Econet Airtime</h2>
+          <p className="text-gray-600 text-sm">Top up your Econet line</p>
         </div>
       </div>
-
-      {/* Error Message Display */}
+  
+      {/* Error Message */}
       {state.error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl mb-4">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">
           {state.error}
         </div>
       )}
-
+  
       {/* Payment Form */}
       <form onSubmit={handleSubmit(onSubmit)}>
         {/* Phone Number Input Field */}
@@ -124,26 +119,24 @@ const EconetAirtime: React.FC = () => {
               validateEconetNumber(value) || 'Please enter a valid Econet number (077 or 078)'
           }}
         />
-
+  
         {/* Amount Selection Section */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Select Amount (USD)
           </label>
-          
-          {/* Amount Selection Grid */}
-          <div className="grid grid-cols-4 gap-2">
+  
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
             {predefinedAmounts.map((amount) => (
               <button
                 key={amount}
                 type="button"
                 onClick={() => setSelectedAmount(amount)}
                 className={`
-                  p-3 rounded-xl border-2 text-sm font-medium transition-colors
+                  p-2 sm:p-3 rounded-xl border-2 text-sm font-medium transition-colors
                   ${selectedAmount === amount
-                    ? 'border-blue-500 bg-blue-50 text-blue-700'  // Selected style
-                    : 'border-gray-200 text-gray-700 hover:border-gray-300'  // Default style
-                  }
+                    ? 'border-blue-500 bg-blue-50 text-blue-700'
+                    : 'border-gray-200 text-gray-700 hover:border-gray-300'}
                 `}
               >
                 ${amount}
@@ -151,15 +144,14 @@ const EconetAirtime: React.FC = () => {
             ))}
           </div>
         </div>
-
+  
         {/* Submit Button */}
         <LoadingButton
           isLoading={state.isLoading || isProcessing}
-          className="bg-gradient-to-r from-blue-500 to-blue-600 hover:shadow-lg"
+          className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:shadow-lg"
         >
-          {/* Dynamic button text based on loading state */}
-          {state.isLoading || isProcessing 
-            ? 'Processing...' 
+          {state.isLoading || isProcessing
+            ? 'Processing...'
             : `Pay $${selectedAmount.toFixed(2)}`
           }
         </LoadingButton>

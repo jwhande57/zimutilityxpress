@@ -6,7 +6,7 @@ import { usePaymentProcessing } from '../../hooks/usePaymentProcessing';
 import { validateTelOneAccount, validateZimMobileNumber } from '../../utils/validators';
 import FormField from '../FormField';
 import LoadingButton from '../LoadingButton';
-import { Wifi } from 'lucide-react';
+import { Wifi ,ArrowLeft} from 'lucide-react';
 
 interface TelOneBroadbandForm {
   accountNumber: string;
@@ -78,11 +78,9 @@ const TelOneBroadband: React.FC = () => {
           onClick={() => dispatch({ type: 'SELECT_SERVICE', payload: null })}
           className="mr-4 p-2 hover:bg-gray-100 rounded-full"
         >
-          ←
+           <ArrowLeft size={18} />
         </button>
-        <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center">
-          <Wifi className="w-6 h-6 text-white" />
-        </div>
+        
         <div className="ml-3">
           <h2 className="text-xl font-semibold text-gray-900">TelOne Broadband</h2>
           <p className="text-gray-600">Purchase broadband packages</p>

@@ -6,7 +6,7 @@ import { usePaymentProcessing } from '../../hooks/usePaymentProcessing';
 import { validatePolicyNumber, validateZimMobileNumber } from '../../utils/validators';
 import FormField from '../FormField';
 import LoadingButton from '../LoadingButton';
-import { Shield } from 'lucide-react';
+import { Shield ,ArrowLeft} from 'lucide-react';
 
 interface NyaradzoPolicyForm {
   policyNumber: string;
@@ -50,11 +50,9 @@ const NyaradzoPolicy: React.FC = () => {
           onClick={() => dispatch({ type: 'SELECT_SERVICE', payload: null })}
           className="mr-4 p-2 hover:bg-gray-100 rounded-full"
         >
-          ←
+           <ArrowLeft size={18} />
         </button>
-        <div className="w-12 h-12 bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center">
-          <Shield className="w-6 h-6 text-white" />
-        </div>
+       
         <div className="ml-3">
           <h2 className="text-xl font-semibold text-gray-900">Nyaradzo Policy</h2>
           <p className="text-gray-600">Pay your life assurance policy</p>
