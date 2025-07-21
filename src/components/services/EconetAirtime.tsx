@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { usePayment } from '../../contexts/PaymentContext';
@@ -6,8 +5,7 @@ import { usePaymentProcessing } from '../../hooks/usePaymentProcessing';
 import { validateEconetNumber } from '../../utils/validators';
 import FormField from '../FormField';
 import LoadingButton from '../LoadingButton';
-import { Phone,ArrowLeft } from 'lucide-react';
-import econetLogo from "../../assets/econet.png";
+import { ArrowLeft } from 'lucide-react';
 
 
 /**
@@ -59,7 +57,6 @@ const EconetAirtime: React.FC = () => {
           serviceType: 'airtime'             // Type of service for backend processing
         }
       });
-
       // Handle successful payment processing
       if (result.success && result.redirectUrl) {
         // Redirect to payment gateway for actual payment

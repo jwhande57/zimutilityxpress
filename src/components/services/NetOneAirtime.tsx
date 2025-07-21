@@ -92,7 +92,7 @@ const NetOneAirtime: React.FC = () => {
                 onClick={() => setSelectedAmount(amount)}
                 className={`p-3 rounded-xl border-2 text-sm font-medium transition-colors ${
                   selectedAmount === amount
-                    ? 'border-red-500 bg-red-50 text-red-700'
+                    ? 'from-orange-400 to-orange-500 text-orange-500'
                     : 'border-gray-200 text-gray-700 hover:border-gray-300'
                 }`}
               >
@@ -104,7 +104,7 @@ const NetOneAirtime: React.FC = () => {
 
         <LoadingButton
           isLoading={state.isLoading || isProcessing}
-          className="bg-gradient-to-r from-red-500 to-red-600 hover:shadow-lg"
+          className="bg-gradient-to-r from-orange-400 to-orange-500 hover:shadow-lg"
         >
           {state.isLoading || isProcessing ? 'Processing...' : `Pay $${selectedAmount.toFixed(2)}`}
         </LoadingButton>

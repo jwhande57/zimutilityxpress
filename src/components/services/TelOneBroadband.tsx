@@ -144,7 +144,7 @@ const TelOneBroadband: React.FC = () => {
 
         <LoadingButton
           isLoading={state.isLoading || isProcessing}
-          className="bg-gradient-to-r from-green-500 to-green-600 hover:shadow-lg"
+          className="bg-gradient-to-r from-sky-400 to-sky-500 hover:shadow-lg"
         >
           {state.isLoading || isProcessing ? 'Processing...' : `Pay $${getSelectedBundlePrice().toFixed(2)}`}
         </LoadingButton>
