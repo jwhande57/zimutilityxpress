@@ -18,6 +18,8 @@ const PaymentSuccess: React.FC = () => {
     }
   }, [reference, getPaymentData]);
 
+  const isAirtimeService = paymentData && ['Econet Airtime', 'NetOne Airtime', 'Econet Data'].includes(paymentData.service);
+
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-md mx-auto">
@@ -31,6 +33,7 @@ const PaymentSuccess: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Payment Successful!</h1>
           <p className="text-gray-600 mb-6">
             Your payment has been processed successfully.
+            {isAirtimeService && ' Your account has been recharged.'}
           </p>
 
           <div className="bg-green-50 rounded-xl p-4 mb-6 text-left">
@@ -64,6 +67,17 @@ const PaymentSuccess: React.FC = () => {
               )}
             </div>
           </div>
+
+          {/* Show recharge confirmation for airtime services */}
+          {isAirtimeService && (
+            <div className="bg-blue-50 rounded-xl p-4 mb-6 text-left">
+              <h3 className="font-semibold text-blue-900 mb-2">Recharge Status</h3>
+              <div className="flex items-center gap-2 text-sm">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-blue-700">Account recharged successfully</span>
+              </div>
+            </div>
+          )}
 
           <div className="space-y-3">
             <Link
