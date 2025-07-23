@@ -1,8 +1,8 @@
+
 import { useState } from 'react';
 import { generatePaymentReference } from '../utils/paymentReference';
 import { localStorageManager } from '../utils/localStorage';
 import { mockApiService } from '../services/mockApi';
-import { useRechargeProcessing } from './useRechargeProcessing';
 
 /**
  * Payment Data Interface - Core payment information structure
@@ -50,7 +50,6 @@ interface PaymentProcessingResult {
 export const usePaymentProcessing = () => {
   // Loading state for async payment operations
   const [isProcessing, setIsProcessing] = useState(false);
-  const { processPostPaymentRecharge } = useRechargeProcessing();
 
   /**
    * Process Payment Function
@@ -147,58 +146,22 @@ export const usePaymentProcessing = () => {
   /**
    * Complete Payment Function
    * Updates payment status after gateway processing completes
-   * Now includes post-payment recharge processing for airtime services
    * 
    * @param reference - Payment reference to update
    * @param status - Final payment status ('success' or 'failed')
    * @param transactionId - Optional transaction ID from payment processor
    */
-  const completePayment = async (reference: string, status: 'success' | 'failed', transactionId?: string) => {
+  const completePayment = (reference: string, status: 'success' | 'failed', transactionId?: string) => {
     // Update payment status in local storage
     const updated = localStorageManager.updatePaymentStatus(reference, status, transactionId);
     
     if (updated) {
       // Log successful update
       console.log('Payment status updated:', { reference, status, transactionId });
-      
-      // Trigger recharge for successful airtime/data payments
-      if (status === 'success') {
-        const paymentData = getPaymentData(reference);
-        
-        if (paymentData && isAirtimeOrDataService(paymentData.service)) {
-          console.log('Triggering post-payment recharge for:', paymentData.service);
-          
-          try {
-            const rechargeResult = await processPostPaymentRecharge(paymentData);
-            
-            if (rechargeResult.success) {
-              console.log('Post-payment recharge completed successfully');
-            } else {
-              console.error('Post-payment recharge failed:', rechargeResult.error);
-              // Note: We don't fail the payment even if recharge fails
-              // This is a business decision - payment succeeded, recharge is a separate process
-            }
-          } catch (error) {
-            console.error('Error during post-payment recharge:', error);
-          }
-        }
-      }
     } else {
       // Log update failure
       console.error('Failed to update payment status:', reference);
     }
-  };
-
-  /**
-   * Helper function to determine if a service requires recharge
-   */
-  const isAirtimeOrDataService = (service: string): boolean => {
-    const rechargeServices = [
-      'Econet Airtime',
-      'NetOne Airtime',
-      'Econet Data'
-    ];
-    return rechargeServices.includes(service);
   };
 
   /**
@@ -225,7 +188,7 @@ export const usePaymentProcessing = () => {
   return {
     processPayment,        // Main payment processing function
     getPaymentData,        // Retrieve payment by reference
-    completePayment,       // Update payment status with recharge integration
+    completePayment,       // Update payment status
     cleanupOldPayments,    // Clean up old records
     getPaymentHistory,     // Get all payment records
     isProcessing          // Current processing state

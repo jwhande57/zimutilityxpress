@@ -20,18 +20,6 @@ export interface PaymentConfirmationResponse {
   timestamp: string;
 }
 
-export interface StockAvailability {
-  amount: number;
-  available: boolean;
-  stock: number;
-}
-
-export interface StockData {
-  service: string;
-  amounts: StockAvailability[];
-  lastUpdated: string;
-}
-
 export const mockApiService = {
   // Simulate payment gateway initialization
   initializePayment: async (paymentData: {
@@ -162,43 +150,6 @@ export const mockApiService = {
         valid: true,
         customerInfo
       }
-    };
-  },
-
-  // New method: Get stock availability for airtime amounts
-  getStockAvailability: async (service: string): Promise<ApiResponse<StockData>> => {
-    console.log('Fetching stock availability for service:', service);
-    
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 500));
-    
-    // Simulate random API failures (5% chance)
-    if (Math.random() < 0.05) {
-      return {
-        success: false,
-        error: 'Unable to fetch stock data. Please try again.'
-      };
-    }
-
-    const predefinedAmounts = [0.50, 1, 2, 5, 10, 20, 50];
-    
-    // Generate mock stock data with random availability
-    const amounts: StockAvailability[] = predefinedAmounts.map(amount => ({
-      amount,
-      available: Math.random() > 0.2, // 80% chance of being available
-      stock: Math.floor(Math.random() * 100) + 10 // Random stock between 10-110
-    }));
-
-    const stockData: StockData = {
-      service,
-      amounts,
-      lastUpdated: new Date().toISOString()
-    };
-
-    return {
-      success: true,
-      data: stockData,
-      message: 'Stock data retrieved successfully'
     };
   }
 };

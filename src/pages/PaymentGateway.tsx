@@ -2,14 +2,12 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { usePaymentProcessing } from '../hooks/usePaymentProcessing';
-import { useRechargeProcessing } from '../hooks/useRechargeProcessing';
 import LoadingButton from '../components/LoadingButton';
 
 const PaymentGateway: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { getPaymentData, completePayment } = usePaymentProcessing();
-  const { isProcessingRecharge } = useRechargeProcessing();
   const [paymentData, setPaymentData] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -37,9 +35,7 @@ const PaymentGateway: React.FC = () => {
     await new Promise(resolve => setTimeout(resolve, 2000));
     
     const transactionId = `TXN${Date.now()}`;
-    
-    // Complete payment (this will trigger recharge if applicable)
-    await completePayment(reference, 'success', transactionId);
+    completePayment(reference, 'success', transactionId);
     
     navigate(`/payment/success?ref=${reference}&txn=${transactionId}`);
   };
@@ -52,7 +48,7 @@ const PaymentGateway: React.FC = () => {
     // Simulate payment gateway processing
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    await completePayment(reference, 'failed');
+    completePayment(reference, 'failed');
     
     navigate(`/payment/failed?ref=${reference}`);
   };
@@ -101,16 +97,6 @@ const PaymentGateway: React.FC = () => {
               </div>
             </div>
           </div>
-
-          {/* Show recharge processing status */}
-          {isProcessingRecharge && (
-            <div className="bg-blue-50 rounded-xl p-4 mb-6">
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                <span className="text-blue-700 text-sm font-medium">Processing recharge...</span>
-              </div>
-            </div>
-          )}
 
           <div className="space-y-3">
             <LoadingButton

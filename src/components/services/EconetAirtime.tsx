@@ -1,13 +1,12 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { usePayment } from '../../contexts/PaymentContext';
 import { usePaymentProcessing } from '../../hooks/usePaymentProcessing';
 import { validateEconetNumber } from '../../utils/validators';
-import { mockApiService, StockData, StockAvailability } from '../../services/mockApi';
 import FormField from '../FormField';
 import LoadingButton from '../LoadingButton';
-import { ArrowLeft, RefreshCw } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+
 
 /**
  * Econet Airtime Form Interface
@@ -32,66 +31,11 @@ const EconetAirtime: React.FC = () => {
   // Local state for selected airtime amount
   const [selectedAmount, setSelectedAmount] = useState<number>(1);
   
-  // Stock availability state
-  const [stockData, setStockData] = useState<StockData | null>(null);
-  const [isLoadingStock, setIsLoadingStock] = useState(false);
-  const [stockError, setStockError] = useState<string | null>(null);
-  
   // Initialize react-hook-form with validation
   const { register, handleSubmit, formState: { errors } } = useForm<EconetAirtimeForm>();
 
   // Predefined airtime amounts in USD for quick selection
   const predefinedAmounts = [0.50, 1, 2, 5, 10, 20, 50];
-
-  /**
-   * Fetch stock availability data
-   */
-  const fetchStockData = async () => {
-    setIsLoadingStock(true);
-    setStockError(null);
-    
-    try {
-      const response = await mockApiService.getStockAvailability('Econet Airtime');
-      
-      if (response.success && response.data) {
-        setStockData(response.data);
-        
-        // Check if currently selected amount is still available
-        const selectedAmountStock = response.data.amounts.find(
-          (stock: StockAvailability) => stock.amount === selectedAmount
-        );
-        
-        if (selectedAmountStock && !selectedAmountStock.available) {
-          // Find first available amount as fallback
-          const firstAvailable = response.data.amounts.find(
-            (stock: StockAvailability) => stock.available
-          );
-          
-          if (firstAvailable) {
-            setSelectedAmount(firstAvailable.amount);
-          }
-        }
-      } else {
-        setStockError(response.error || 'Failed to fetch stock data');
-      }
-    } catch (error) {
-      setStockError('Failed to fetch stock data');
-      console.error('Stock fetch error:', error);
-    } finally {
-      setIsLoadingStock(false);
-    }
-  };
-
-  // Fetch stock data on component mount
-  useEffect(() => {
-    fetchStockData();
-  }, []);
-
-  // Get available amounts for rendering
-  const getAvailableAmounts = (): StockAvailability[] => {
-    if (!stockData) return [];
-    return stockData.amounts.filter(stock => stock.available);
-  };
 
   /**
    * Form submission handler
@@ -175,80 +119,33 @@ const EconetAirtime: React.FC = () => {
   
         {/* Amount Selection Section */}
         <div className="mb-4">
-          <div className="flex items-center justify-between mb-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Select Amount (USD)
-            </label>
-            <button
-              type="button"
-              onClick={fetchStockData}
-              disabled={isLoadingStock}
-              className="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-50"
-            >
-              <RefreshCw size={16} className={isLoadingStock ? 'animate-spin' : ''} />
-            </button>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Select Amount (USD)
+          </label>
+  
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+            {predefinedAmounts.map((amount) => (
+              <button
+                key={amount}
+                type="button"
+                onClick={() => setSelectedAmount(amount)}
+                className={`
+                  p-2 sm:p-3 rounded-xl border-2 text-sm font-medium transition-colors
+                  ${selectedAmount === amount
+                    ? 'border-blue-500 bg-blue-50 text-blue-700'
+                    : 'border-gray-200 text-gray-700 hover:border-gray-300'}
+                `}
+              >
+                ${amount}
+              </button>
+            ))}
           </div>
-
-          {/* Stock Error Message */}
-          {stockError && (
-            <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-3 py-2 rounded-lg mb-3 text-sm">
-              {stockError}
-            </div>
-          )}
-
-          {/* Loading State */}
-          {isLoadingStock && (
-            <div className="flex items-center justify-center py-8">
-              <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-              <span className="ml-2 text-gray-600">Loading available amounts...</span>
-            </div>
-          )}
-
-          {/* Amount Selection Grid */}
-          {!isLoadingStock && stockData && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-              {getAvailableAmounts().map((stock) => (
-                <button
-                  key={stock.amount}
-                  type="button"
-                  onClick={() => setSelectedAmount(stock.amount)}
-                  disabled={!stock.available}
-                  className={`
-                    relative p-2 sm:p-3 rounded-xl border-2 text-sm font-medium transition-all
-                    ${selectedAmount === stock.amount
-                      ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-md'
-                      : 'border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50'
-                    }
-                    ${!stock.available ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-                  `}
-                >
-                  <div className="flex flex-col items-center">
-                    <span className="font-semibold">${stock.amount}</span>
-                    <span className="text-xs text-gray-500 mt-1">
-                      {stock.available ? `${stock.stock} left` : 'Out of stock'}
-                    </span>
-                  </div>
-                  {selectedAmount === stock.amount && (
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full"></div>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* No Stock Available Message */}
-          {!isLoadingStock && stockData && getAvailableAmounts().length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              <p>No amounts currently available. Please try again later.</p>
-            </div>
-          )}
         </div>
   
         {/* Submit Button */}
         <LoadingButton
           isLoading={state.isLoading || isProcessing}
           className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:shadow-lg"
-          type="submit"
         >
           {state.isLoading || isProcessing
             ? 'Processing...'
