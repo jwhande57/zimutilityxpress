@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { usePayment } from '../../contexts/PaymentContext';
 import { usePaymentProcessing } from '../../hooks/usePaymentProcessing';
 import { validateEconetNumber } from '../../utils/validators';
 import FormField from '../FormField';
 import LoadingButton from '../LoadingButton';
-import { useStockAmounts } from '../../hooks/useStockAmounts';
 import { ArrowLeft } from 'lucide-react';
 
 /** Econet Airtime Form Interface */
@@ -17,23 +16,11 @@ const EconetAirtime: React.FC = () => {
   const { state, dispatch } = usePayment();
   const { processPayment, isProcessing } = usePaymentProcessing();
 
-  // 1) call the hook exactly once, at top of component
-  //    pass your product ID (102) here
-  const {
-    amounts: predefinedAmounts,
-    loading: amountsLoading,
-    error: fetchError,
-  } = useStockAmounts(102);
+  // 1) hard‑coded amounts
+  const predefinedAmounts = [0.2, 0.5, 1, 2, 5, 10, 20, 50];
 
-  // 2) local selection state
-  const [selectedAmount, setSelectedAmount] = useState<number>(0);
-
-  // 3) default‑select first amount when data arrives
-  useEffect(() => {
-    if (!amountsLoading && predefinedAmounts.length > 0) {
-      setSelectedAmount(predefinedAmounts[0]);
-    }
-  }, [amountsLoading, predefinedAmounts]);
+  // 2) local selection state, default to the first amount
+  const [selectedAmount, setSelectedAmount] = useState<number>(predefinedAmounts[0]);
 
   const { register, handleSubmit, formState: { errors } } = useForm<EconetAirtimeForm>();
 
@@ -74,10 +61,10 @@ const EconetAirtime: React.FC = () => {
         </div>
       </div>
 
-      {/* Fetch error (optional) */}
-      {fetchError && (
-        <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded-xl mb-4 text-sm">
-          Could not load amounts: {fetchError}
+      {/* Error */}
+      {state.error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">
+          {state.error}
         </div>
       )}
 
@@ -101,37 +88,29 @@ const EconetAirtime: React.FC = () => {
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Select Amount (USD)
           </label>
-
-          {amountsLoading ? (
-            <div className="flex justify-center py-4">
-              <div className="w-6 h-6 border-4 border-gray-200 border-t-blue-500 rounded-full animate-spin" />
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-              {predefinedAmounts.map((amt) => (
-                <button
-                  key={amt}
-                  type="button"
-                  onClick={() => setSelectedAmount(amt)}
-                  className={`
-                    p-2 sm:p-3 rounded-xl border-2 text-sm font-medium transition-colors
-                    ${selectedAmount === amt
-                      ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-gray-200 text-gray-700 hover:border-gray-300'}
-                  `}
-                >
-                  ${amt.toFixed(2)}
-                </button>
-              ))}
-            </div>
-          )}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+            {predefinedAmounts.map((amt) => (
+              <button
+                key={amt}
+                type="button"
+                onClick={() => setSelectedAmount(amt)}
+                className={`
+                  p-2 sm:p-3 rounded-xl border-2 text-sm font-medium transition-colors
+                  ${selectedAmount === amt
+                    ? 'border-blue-500 bg-blue-50 text-blue-700'
+                    : 'border-gray-200 text-gray-700 hover:border-gray-300'}
+                `}
+              >
+                ${amt.toFixed(2)}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Submit */}
         <LoadingButton
           isLoading={state.isLoading || isProcessing}
           className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:shadow-lg"
-          disabled={amountsLoading}
         >
           {state.isLoading || isProcessing
             ? 'Processing…'

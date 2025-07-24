@@ -16,7 +16,7 @@ const NetOneAirtime: React.FC = () => {
   const { state, dispatch } = usePayment();
   const { processPayment, isProcessing } = usePaymentProcessing();
 
-  const { amounts: predefinedAmounts, loading: amountsLoading } = useStockAmounts(3);
+  const { amounts: predefinedAmounts, loading: amountsLoading } = useStockAmounts(35);
   const [selectedAmount, setSelectedAmount] = useState<number>(0);
 
   const { register, handleSubmit, formState: { errors } } = useForm<NetOneAirtimeForm>();

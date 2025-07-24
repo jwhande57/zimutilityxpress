@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { MessageCircle} from "lucide-react";
+import { MessageCircle } from "lucide-react";
 import { PaymentProvider, usePayment } from "../contexts/PaymentContext";
 import ServiceCard from "../components/ServiceCard";
 import EconetAirtime from "../components/services/EconetAirtime";
@@ -9,6 +9,7 @@ import EconetData from "../components/services/EconetData";
 import ZESAElectricity from "../components/services/ZESAElectricity";
 import TelOneBroadband from "../components/services/TelOneBroadband";
 import NyaradzoPolicy from "../components/services/NyaradzoPolicy";
+import EconetSmartBiz from "../components/services/EconetSmartBiz";
 
 import econetLogo from "../assets/econet.png";
 import netoneLogo from "../assets/netone.jpg";
@@ -16,6 +17,7 @@ import econetDataLogo from "../assets/econet-data.png";
 import zesaLogo from "../assets/zesa.png";
 import teloneLogo from "../assets/telonw.png";
 import nyaradzoLogo from "../assets/nyaradzo.jpg";
+import smartbizLogo from "../assets/smartbiz.png";
 
 const MainContent: React.FC = () => {
   const { state } = usePayment();
@@ -34,6 +36,8 @@ const MainContent: React.FC = () => {
         return <TelOneBroadband />;
       case "nyaradzo-policy":
         return <NyaradzoPolicy />;
+      case "econet-smartbiz":
+        return <EconetSmartBiz />;
       default:
         return null;
     }
@@ -65,7 +69,7 @@ const MainContent: React.FC = () => {
             {/* Right Side: Support Link */}
             <Link
               to="/support"
-              className="flex items-center gap-1 sm:gap-2 text-blue-600 hover:text-blue-800 transition-colors text-sm"
+              className="p-2 flex items-center gap-1 sm:gap-2 text-blue-600 hover:text-blue-800 transition-colors text-sm"
             >
               <MessageCircle size={18} />
               <span className="hidden sm:inline">Support</span>
@@ -93,17 +97,15 @@ const MainContent: React.FC = () => {
             description="Top up your Econet mobile line instantly"
             logoSrc={econetLogo}
             gradient="bg-gradient-to-r from-blue-500 to-blue-600"
+            badge="Popular"
           />
-
           <ServiceCard
             id="netone-airtime"
             title="NetOne Airtime"
             description="Top up your NetOne mobile line instantly"
             logoSrc={netoneLogo}
             gradient="bg-gradient-to-r from-orange-400 to-orange-500"
-            badge="Popular"
           />
-
           <ServiceCard
             id="econet-data"
             title="Econet Data Bundles"
@@ -111,15 +113,6 @@ const MainContent: React.FC = () => {
             logoSrc={econetDataLogo}
             gradient="bg-gradient-to-r from-purple-500 to-purple-600"
           />
-
-          <ServiceCard
-            id="zesa-electricity"
-            title="ZESA Electricity"
-            description="Buy prepaid electricity tokens"
-            logoSrc={zesaLogo}
-            gradient="bg-gradient-to-r from-yellow-400 to-yellow-500"
-          />
-
           <ServiceCard
             id="telone-broadband"
             title="TelOne Broadband"
@@ -127,7 +120,20 @@ const MainContent: React.FC = () => {
             logoSrc={teloneLogo}
             gradient="bg-gradient-to-r from-sky-400 to-sky-500"
           />
-
+          <ServiceCard
+            id="econet-smartbiz"
+            title="Econet SmartBiz"
+            description="Purchase unlimited Econet smartbiz data"
+            logoSrc={smartbizLogo}
+            gradient="bg-gradient-to-r from-blue-500 to-purple-600"
+          />
+          <ServiceCard
+            id="zesa-electricity"
+            title="ZESA Electricity"
+            description="Buy prepaid electricity tokens"
+            logoSrc={zesaLogo}
+            gradient="bg-gradient-to-r from-yellow-400 to-yellow-500"
+          />
           <ServiceCard
             id="nyaradzo-policy"
             title="Nyaradzo Policy"
@@ -145,7 +151,7 @@ const MainContent: React.FC = () => {
         </p>
         <Link
           to="/support"
-          className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors text-sm"
+          className="p-2 inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors text-sm"
         >
           <MessageCircle size={16} />
           Need help? Contact Support

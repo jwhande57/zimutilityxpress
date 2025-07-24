@@ -1,18 +1,15 @@
-// "productId": 41
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { usePayment } from '../../contexts/PaymentContext';
 import { usePaymentProcessing } from '../../hooks/usePaymentProcessing';
-import { validateTelOneAccount, validateZimMobileNumber } from '../../utils/validators';
+import { validateEconetNumber } from '../../utils/validators';
 import FormField from '../FormField';
 import LoadingButton from '../LoadingButton';
-import { Wifi, ArrowLeft } from 'lucide-react';
+import { Smartphone, ArrowLeft } from 'lucide-react';
 
-interface TelOneBroadbandForm {
-  accountNumber: string;
-  bundle: string;
+interface EconetDataForm {
   phoneNumber: string;
+  bundle: string;
 }
 
 interface BundleOption {
@@ -21,69 +18,74 @@ interface BundleOption {
   price: number;
 }
 
-const TelOneBroadband: React.FC = () => {
+const EconetSmartBiz: React.FC = () => {
   const { state, dispatch } = usePayment();
   const { processPayment, isProcessing } = usePaymentProcessing();
-  const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm<TelOneBroadbandForm>();
+  const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm<EconetDataForm>();
 
-  // --- local state for fetched bundles ---
-  const [bundles, setBundles] = useState<BundleOption[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  // --- dynamic bundle state & loading ---
+  const [dataBundles, setDataBundles] = useState<BundleOption[]>([]);
+  const [bundlesLoading, setBundlesLoading] = useState<boolean>(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
-  // fetch on mount
+  // 1) fetch on mount
   useEffect(() => {
     const fetchBundles = async () => {
-      setLoading(true);
+      setBundlesLoading(true);
       try {
-        const res = await fetch('http://localhost:8080/api/check-stock/40');
+        const res = await fetch('http://localhost:8080/api/check-stock/47');
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json() as { stock: any[] };
-        const mapped: BundleOption[] = json.stock.map(item => ({
+        const mapped = json.stock.map(item => ({
           id: item.productCode,
           name: item.name,
           price: item.amount,
         }));
-        setBundles(mapped);
+        setDataBundles(mapped);
+
+        // default-select first bundle
         if (mapped.length) {
           setValue('bundle', mapped[0].id);
         }
       } catch (err: any) {
         console.error(err);
-        setError(err.message || 'Failed to load bundles');
+        setFetchError(err.message || 'Unknown error');
       } finally {
-        setLoading(false);
+        setBundlesLoading(false);
       }
     };
     fetchBundles();
   }, [setValue]);
 
+  // reflect selected bundle in form
   const selectedBundleId = watch('bundle');
+
+  // helper to get price
   const getSelectedBundlePrice = () => {
-    const b = bundles.find(x => x.id === selectedBundleId);
-    return b?.price ?? 0;
+    const bundle = dataBundles.find(b => b.id === selectedBundleId);
+    return bundle?.price ?? 0;
   };
 
-  const onSubmit = async (data: TelOneBroadbandForm) => {
+  const onSubmit = async (data: EconetDataForm) => {
     dispatch({ type: 'SET_LOADING', payload: true });
     try {
-      const bundleInfo = bundles.find(b => b.id === data.bundle);
+      const bundle = dataBundles.find(b => b.id === data.bundle);
       const result = await processPayment({
-        service: 'TelOne Broadband',
-        amount: bundleInfo?.price ?? 0,
+        service: 'Econet Data Bundles',
+        amount: bundle?.price ?? 0,
         customerData: {
-          accountNumber: data.accountNumber,
-          bundle: bundleInfo?.name ?? data.bundle,
           phoneNumber: data.phoneNumber,
-          serviceType: 'broadband',
+          bundle: bundle?.name ?? data.bundle,
+          serviceType: 'data',
         },
       });
+
       if (result.success && result.redirectUrl) {
         window.location.href = result.redirectUrl;
       } else {
         dispatch({ type: 'SET_ERROR', payload: result.error || 'Payment processing failed' });
       }
-    } catch {
+    } catch (err) {
       dispatch({ type: 'SET_ERROR', payload: 'Payment processing failed. Please try again.' });
     }
   };
@@ -99,53 +101,54 @@ const TelOneBroadband: React.FC = () => {
           <ArrowLeft size={18} />
         </button>
         <div className="ml-3">
-          <h2 className="text-xl font-semibold text-gray-900">TelOne Broadband</h2>
-          <p className="text-gray-600">Purchase broadband packages</p>
+          <h2 className="text-xl font-semibold text-gray-900">Econet SmartBiz</h2>
+          <p className="text-gray-600">Purchase Unlimited Data Bundle</p>
         </div>
       </div>
 
-      {/* Load error */}
-      {error && (
+      {/* Loading error */}
+      {fetchError && (
         <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded-xl mb-4 text-sm">
-          {error}
+          Could not load bundles: {fetchError}
         </div>
       )}
 
       {/* Form */}
       <form onSubmit={handleSubmit(onSubmit)}>
         <FormField
-          label="Account Number"
-          name="accountNumber"
-          placeholder="123456"
+          label="Phone Number"
+          name="phoneNumber"
+          placeholder="077 123 4567"
           register={register}
-          error={errors.accountNumber}
+          error={errors.phoneNumber}
           validation={{
-            required: 'Account number is required',
-            validate: v => validateTelOneAccount(v) || 'Please enter a valid TelOne account number',
+            required: 'Phone number is required',
+            validate: (value: string) =>
+              validateEconetNumber(value) || 'Please enter a valid Econet Smartbiz number (077/078)',
           }}
         />
 
         <FormField
-          label="Select Bundle"
+          label="Select Data Bundle"
           name="bundle"
           register={register}
           error={errors.bundle}
-          validation={{ required: 'Please select a bundle' }}
+          validation={{ required: 'Please select a data bundle' }}
         >
-          {loading ? (
+          {bundlesLoading ? (
             <div className="flex justify-center py-4">
-              <div className="w-6 h-6 border-4 border-gray-200 border-t-green-500 rounded-full animate-spin" />
+              <div className="w-6 h-6 border-4 border-gray-200 border-t-purple-500 rounded-full animate-spin" />
             </div>
           ) : (
             <select
-              {...register('bundle', { required: 'Please select a bundle' })}
-              disabled={loading}
-              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors ${
+              {...register('bundle', { required: 'Please select a data bundle' })}
+              disabled={bundlesLoading}
+              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors ${
                 errors.bundle ? 'border-red-500' : 'border-gray-300'
               }`}
             >
               <option value="">Choose a bundle...</option>
-              {bundles.map(b => (
+              {dataBundles.map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.name} – ${b.price.toFixed(2)}
                 </option>
@@ -154,22 +157,10 @@ const TelOneBroadband: React.FC = () => {
           )}
         </FormField>
 
-        <FormField
-          label="Notification Mobile Number"
-          name="phoneNumber"
-          placeholder="077 123 4567"
-          register={register}
-          error={errors.phoneNumber}
-          validation={{
-            required: 'Phone number is required',
-            validate: v => validateZimMobileNumber(v) || 'Please enter a valid Zimbabwean mobile number',
-          }}
-        />
-
         <LoadingButton
           isLoading={state.isLoading || isProcessing}
-          disabled={loading}
-          className="bg-gradient-to-r from-sky-400 to-sky-500 hover:shadow-lg"
+          disabled={bundlesLoading}
+          className="bg-gradient-to-r from-blue-500 to-purple-600 hover:shadow-lg"
         >
           {state.isLoading || isProcessing
             ? 'Processing...'
@@ -181,4 +172,4 @@ const TelOneBroadband: React.FC = () => {
   );
 };
 
-export default TelOneBroadband;
+export default EconetSmartBiz;

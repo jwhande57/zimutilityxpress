@@ -1,3 +1,4 @@
+// "productId": 41
 
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -6,7 +7,7 @@ import { usePaymentProcessing } from '../../hooks/usePaymentProcessing';
 import { validateMeterNumber, validateZimMobileNumber } from '../../utils/validators';
 import FormField from '../FormField';
 import LoadingButton from '../LoadingButton';
-import { Zap,ArrowLeft} from 'lucide-react';
+import { Zap, ArrowLeft } from 'lucide-react';
 
 interface ZESAElectricityForm {
   meterNumber: string;
@@ -16,15 +17,16 @@ interface ZESAElectricityForm {
 const ZESAElectricity: React.FC = () => {
   const { state, dispatch } = usePayment();
   const { processPayment, isProcessing } = usePaymentProcessing();
-  const [selectedAmount, setSelectedAmount] = useState<number>(5);
   
+  // default $5, enforced by slider min
+  const [selectedAmount, setSelectedAmount] = useState<number>(5);
+
   const { register, handleSubmit, formState: { errors } } = useForm<ZESAElectricityForm>();
 
   const quickAmounts = [5, 10, 20, 50, 100];
 
   const onSubmit = async (data: ZESAElectricityForm) => {
     dispatch({ type: 'SET_LOADING', payload: true });
-    
     try {
       const result = await processPayment({
         service: 'ZESA Electricity',
@@ -32,36 +34,36 @@ const ZESAElectricity: React.FC = () => {
         customerData: {
           meterNumber: data.meterNumber,
           phoneNumber: data.phoneNumber,
-          serviceType: 'electricity'
-        }
+          serviceType: 'electricity',
+        },
       });
-
       if (result.success && result.redirectUrl) {
         window.location.href = result.redirectUrl;
       } else {
         dispatch({ type: 'SET_ERROR', payload: result.error || 'Payment processing failed' });
       }
-    } catch (error) {
+    } catch {
       dispatch({ type: 'SET_ERROR', payload: 'Payment processing failed. Please try again.' });
     }
   };
 
   return (
     <div className="bg-white rounded-2xl shadow-lg p-6">
+      {/* Header */}
       <div className="flex items-center mb-6">
         <button
           onClick={() => dispatch({ type: 'SELECT_SERVICE', payload: null })}
           className="mr-4 p-2 hover:bg-gray-100 rounded-full"
         >
-           <ArrowLeft size={18} />
+          <ArrowLeft size={18} />
         </button>
-       
         <div className="ml-3">
           <h2 className="text-xl font-semibold text-gray-900">ZESA Electricity</h2>
           <p className="text-gray-600">Purchase electricity tokens</p>
         </div>
       </div>
 
+      {/* Error */}
       {state.error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl mb-4">
           {state.error}
@@ -77,8 +79,7 @@ const ZESAElectricity: React.FC = () => {
           error={errors.meterNumber}
           validation={{
             required: 'Meter number is required',
-            validate: (value: string) => 
-              validateMeterNumber(value) || 'Please enter a valid 11-digit meter number'
+            validate: v => validateMeterNumber(v) || 'Please enter a valid 11-digit meter number',
           }}
         />
 
@@ -90,51 +91,58 @@ const ZESAElectricity: React.FC = () => {
           error={errors.phoneNumber}
           validation={{
             required: 'Phone number is required',
-            validate: (value: string) => 
-              validateZimMobileNumber(value) || 'Please enter a valid Zimbabwean mobile number'
+            validate: v => validateZimMobileNumber(v) || 'Please enter a valid Zimbabwean mobile number',
           }}
         />
 
-        <div className="mb-4">
+        {/* Amount Selection */}
+        <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Amount (USD) - Minimum $5
+            Amount (USD) <span className="text-gray-500">(Min $5, Max $500)</span>
           </label>
+
+          {/* Quick‑select buttons */}
           <div className="grid grid-cols-5 gap-2 mb-4">
-            {quickAmounts.map((amount) => (
+            {quickAmounts.map((amt) => (
               <button
-                key={amount}
+                key={amt}
                 type="button"
-                onClick={() => setSelectedAmount(amount)}
+                onClick={() => setSelectedAmount(amt)}
                 className={`p-3 rounded-xl border-2 text-sm font-medium transition-colors ${
-                  selectedAmount === amount
+                  selectedAmount === amt
                     ? 'border-yellow-500 bg-yellow-50 text-yellow-700'
                     : 'border-gray-200 text-gray-700 hover:border-gray-300'
                 }`}
               >
-                ${amount}
+                ${amt}
               </button>
             ))}
           </div>
-          
-          <div className="flex items-center">
-            <span className="text-sm text-gray-600 mr-2">Custom amount: $</span>
+
+          {/* Slider */}
+          <div className="flex items-center space-x-4">
+            <span className="text-sm text-gray-600">${selectedAmount}</span>
             <input
-              type="number"
-              min="5"
-              max="1000"
-              step="1"
+              type="range"
+              min={5}
+              max={500}
+              step={1}
               value={selectedAmount}
-              onChange={(e) => setSelectedAmount(parseFloat(e.target.value) || 5)}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+              onChange={(e) => setSelectedAmount(Number(e.target.value))}
+              className="flex-1 h-2 rounded-lg bg-gray-200 accent-yellow-500 cursor-pointer"
             />
+            <span className="text-sm text-gray-600">$500</span>
           </div>
         </div>
 
         <LoadingButton
           isLoading={state.isLoading || isProcessing}
-          className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:shadow-lg"
+          className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 hover:shadow-lg"
         >
-          {state.isLoading || isProcessing ? 'Processing...' : `Pay $${selectedAmount.toFixed(2)}`}
+          {state.isLoading || isProcessing
+            ? 'Processing...'
+            : `Pay $${selectedAmount.toFixed(2)}`
+          }
         </LoadingButton>
       </form>
     </div>
