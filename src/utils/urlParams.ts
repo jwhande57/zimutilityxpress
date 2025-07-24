@@ -1,71 +1,72 @@
-
+// Define an interface for payment URL parameters
 export interface PaymentUrlParams {
-  ref?: string;
-  txn?: string;
-  error?: string;
-  status?: 'success' | 'failed' | 'error';
-  amount?: string;
-  service?: string;
+  ref?: string; // Optional reference parameter
+  txn?: string; // Optional transaction ID parameter
+  error?: string; // Optional error message parameter
+  status?: 'success' | 'failed' | 'error'; // Optional status parameter with specific allowed values
+  amount?: string; // Optional amount parameter
+  service?: string; // Optional service parameter
 }
 
+// Create an object to manage URL parameters related to payments
 export const urlParamsManager = {
-  // Extract payment parameters from URL
+  // Method to extract payment parameters from URL search parameters
   getPaymentParams: (searchParams: URLSearchParams): PaymentUrlParams => {
-    const params: PaymentUrlParams = {};
+    const params: PaymentUrlParams = {}; // Initialize an empty object to hold the extracted parameters
     
-    const ref = searchParams.get('ref');
-    const txn = searchParams.get('txn');
-    const error = searchParams.get('error');
-    const status = searchParams.get('status');
-    const amount = searchParams.get('amount');
-    const service = searchParams.get('service');
+    const ref = searchParams.get('ref'); // Get the 'ref' parameter from the URL search params
+    const txn = searchParams.get('txn'); // Get the 'txn' parameter from the URL search params
+    const error = searchParams.get('error'); // Get the 'error' parameter from the URL search params
+    const status = searchParams.get('status'); // Get the 'status' parameter from the URL search params
+    const amount = searchParams.get('amount'); // Get the 'amount' parameter from the URL search params
+    const service = searchParams.get('service'); // Get the 'service' parameter from the URL search params
 
-    if (ref) params.ref = ref;
-    if (txn) params.txn = txn;
-    if (error) params.error = error;
-    if (status && ['success', 'failed', 'error'].includes(status)) {
-      params.status = status as 'success' | 'failed' | 'error';
+    if (ref) params.ref = ref; // Set ref in the params object if it exists
+    if (txn) params.txn = txn; // Set txn in the params object if it exists
+    if (error) params.error = error; // Set error in the params object if it exists
+    if (status && ['success', 'failed', 'error'].includes(status)) { // Check if status exists and is valid
+      params.status = status as 'success' | 'failed' | 'error'; // Set status in the params object with type assertion
     }
-    if (amount) params.amount = amount;
-    if (service) params.service = service;
+    if (amount) params.amount = amount; // Set amount in the params object if it exists
+    if (service) params.service = service; // Set service in the params object if it exists
 
-    console.log('Extracted URL params:', params);
-    return params;
+    console.log('Extracted URL params:', params); // Log the extracted parameters for debugging
+    return params; // Return the object containing the extracted parameters
   },
 
-  // Build payment redirect URL
+  // Method to build a payment redirect URL with the given base URL and parameters
   buildPaymentUrl: (baseUrl: string, params: PaymentUrlParams): string => {
-    const url = new URL(baseUrl, window.location.origin);
+    const url = new URL(baseUrl, window.location.origin); // Create a new URL object with the base URL and current origin
     
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        url.searchParams.set(key, value.toString());
+    Object.entries(params).forEach(([key, value]) => { // Iterate over each key-value pair in the params object
+      if (value !== undefined && value !== null) { // Check if the value is defined and not null
+        url.searchParams.set(key, value.toString()); // Add the parameter to the URL's search params
       }
     });
 
-    const finalUrl = url.toString();
-    console.log('Built payment URL:', finalUrl);
-    return finalUrl;
+    const finalUrl = url.toString(); // Convert the URL object to a string
+    console.log('Built payment URL:', finalUrl); // Log the constructed URL for debugging
+    return finalUrl; // Return the fully constructed URL as a string
   },
 
-  // Validate required parameters
+  // Method to validate if all required parameters are present
   validateParams: (params: PaymentUrlParams, required: (keyof PaymentUrlParams)[]): boolean => {
-    const missing = required.filter(key => !params[key]);
-    if (missing.length > 0) {
-      console.error('Missing required URL parameters:', missing);
-      return false;
+    const missing = required.filter(key => !params[key]); // Filter required keys to find any missing in params
+    if (missing.length > 0) { // Check if there are any missing required parameters
+      console.error('Missing required URL parameters:', missing); // Log an error with the missing parameters
+      return false; // Return false if any required parameters are missing
     }
-    return true;
+    return true; // Return true if all required parameters are present
   },
 
-  // Clean URL parameters (remove payment-specific params)
+  // Method to clean the URL by removing payment-specific parameters
   cleanUrl: (): void => {
-    const url = new URL(window.location.href);
-    const paramsToRemove = ['ref', 'txn', 'error', 'status', 'amount', 'service'];
+    const url = new URL(window.location.href); // Get the current URL as a URL object
+    const paramsToRemove = ['ref', 'txn', 'error', 'status', 'amount', 'service']; // Define the list of parameters to remove
     
-    paramsToRemove.forEach(param => url.searchParams.delete(param));
+    paramsToRemove.forEach(param => url.searchParams.delete(param)); // Remove each specified parameter from the URL
     
-    window.history.replaceState({}, document.title, url.pathname);
-    console.log('Cleaned URL parameters');
+    window.history.replaceState({}, document.title, url.pathname); // Update the browser URL without reloading, keeping only the pathname
+    console.log('Cleaned URL parameters'); // Log the cleaning action for debugging
   }
 };

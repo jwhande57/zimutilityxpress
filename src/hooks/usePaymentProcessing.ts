@@ -1,7 +1,10 @@
-
+// Import React’s useState hook for managing component state
 import { useState } from 'react';
+// Import helper to generate a unique payment reference
 import { generatePaymentReference } from '../utils/paymentReference';
+// Import manager for saving/retrieving payments in localStorage
 import { localStorageManager } from '../utils/localStorage';
+// Import a mock API service to simulate external payment initialization
 import { mockApiService } from '../services/mockApi';
 
 /**
@@ -31,10 +34,10 @@ interface ProcessPaymentParams {
  * Output structure from payment processing function
  */
 interface PaymentProcessingResult {
-  success: boolean;          // Whether payment processing succeeded
-  reference?: string;        // Payment reference if successful
-  redirectUrl?: string;      // URL to redirect to payment gateway
-  error?: string;           // Error message if processing failed
+  success: boolean;                     // Whether payment processing succeeded
+  reference?: string;                   // Payment reference if successful
+  redirectUrl?: string;                 // URL to redirect to payment gateway
+  error?: string;                       // Error message if processing failed
 }
 
 /**
@@ -44,32 +47,32 @@ interface PaymentProcessingResult {
  * 2. Store payment data locally
  * 3. Initialize payment with external API
  * 4. Return redirect URL for payment gateway
- * 
- * @returns Object containing payment processing functions and state
  */
 export const usePaymentProcessing = () => {
-  // Loading state for async payment operations
+  // State flag indicating whether a payment operation is in progress
   const [isProcessing, setIsProcessing] = useState(false);
 
   /**
    * Process Payment Function
    * Main function that orchestrates the entire payment flow
-   * 
+   *
    * @param params - Payment parameters (service, amount, customer data)
    * @returns Promise resolving to payment processing result
    */
-  const processPayment = async (params: ProcessPaymentParams): Promise<PaymentProcessingResult> => {
-    // Set loading state to true (triggers UI loading indicators)
+  const processPayment = async (
+    params: ProcessPaymentParams
+  ): Promise<PaymentProcessingResult> => {
+    // Begin loading state (e.g., show spinner)
     setIsProcessing(true);
     
     try {
-      // Log payment initiation for debugging
+      // Log the incoming parameters for debugging
       console.log('Starting payment processing:', params);
       
-      // Step 1: Generate unique payment reference
+      // Generate a new, unique payment reference
       const reference = generatePaymentReference();
       
-      // Step 2: Create comprehensive payment data object
+      // Build the payment data object to persist and send to API
       const paymentData: PaymentData = {
         service: params.service,
         amount: params.amount,
@@ -78,29 +81,29 @@ export const usePaymentProcessing = () => {
         timestamp: new Date().toISOString(),
       };
 
-      // Step 3: Save payment data to local storage for persistence
+      // Save the payment data locally with an initial status of 'pending'
       const saved = localStorageManager.savePayment({
         ...paymentData,
-        status: 'pending'  // Initial status before payment gateway
+        status: 'pending'
       });
 
-      // Handle local storage failure
+      // If saving to localStorage failed, abort and throw an error
       if (!saved) {
         throw new Error('Failed to save payment data');
       }
 
-      // Step 4: Initialize payment with external API service
+      // Call the external (mock) API to initialize the payment
       const apiResponse = await mockApiService.initializePayment(paymentData);
       
-      // Handle API initialization failure
+      // If API indicates failure or missing data, throw an error
       if (!apiResponse.success || !apiResponse.data) {
         throw new Error(apiResponse.error || 'Failed to initialize payment');
       }
 
-      // Log successful initialization
+      // Log the successful initialization details
       console.log('Payment initialization successful:', apiResponse.data);
       
-      // Return success result with redirect URL
+      // Return a successful result including the redirect URL
       return {
         success: true,
         reference,
@@ -108,16 +111,18 @@ export const usePaymentProcessing = () => {
       };
       
     } catch (error) {
-      // Log error for debugging
+      // Log any error that occurred during the process
       console.error('Payment processing error:', error);
       
-      // Return error result with user-friendly message
+      // Return a failure result with an appropriate message
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to process payment. Please try again.'
+        error: error instanceof Error
+          ? error.message
+          : 'Failed to process payment. Please try again.'
       };
     } finally {
-      // Always clear loading state when processing completes
+      // Reset the loading state after completion or error
       setIsProcessing(false);
     }
   };
@@ -125,41 +130,54 @@ export const usePaymentProcessing = () => {
   /**
    * Get Payment Data Function
    * Retrieves stored payment data by reference number
-   * 
+   *
    * @param reference - Payment reference to look up
-   * @returns Payment data if found, null if not found
+   * @returns PaymentData if found, otherwise null
    */
   const getPaymentData = (reference: string): PaymentData | null => {
-    // Retrieve from local storage
+    // Fetch raw stored record (may include status, transactionId, etc.)
     const stored = localStorageManager.getPayment(reference);
     
-    // Transform stored data to PaymentData format (exclude status fields)
-    return stored ? {
-      service: stored.service,
-      amount: stored.amount,
-      reference: stored.reference,
-      customerData: stored.customerData,
-      timestamp: stored.timestamp
-    } : null;
+    // If found, strip out extra fields and return as PaymentData
+    return stored
+      ? {
+          service: stored.service,
+          amount: stored.amount,
+          reference: stored.reference,
+          customerData: stored.customerData,
+          timestamp: stored.timestamp
+        }
+      : null;  // Return null when not found
   };
 
   /**
    * Complete Payment Function
    * Updates payment status after gateway processing completes
-   * 
+   *
    * @param reference - Payment reference to update
    * @param status - Final payment status ('success' or 'failed')
    * @param transactionId - Optional transaction ID from payment processor
    */
-  const completePayment = (reference: string, status: 'success' | 'failed', transactionId?: string) => {
-    // Update payment status in local storage
-    const updated = localStorageManager.updatePaymentStatus(reference, status, transactionId);
+  const completePayment = (
+    reference: string,
+    status: 'success' | 'failed',
+    transactionId?: string
+  ) => {
+    // Attempt to update the status in localStorage
+    const updated = localStorageManager.updatePaymentStatus(
+      reference,
+      status,
+      transactionId
+    );
     
+    // Log depending on whether the update succeeded
     if (updated) {
-      // Log successful update
-      console.log('Payment status updated:', { reference, status, transactionId });
+      console.log('Payment status updated:', {
+        reference,
+        status,
+        transactionId
+      });
     } else {
-      // Log update failure
       console.error('Failed to update payment status:', reference);
     }
   };
@@ -167,8 +185,8 @@ export const usePaymentProcessing = () => {
   /**
    * Cleanup Old Payments Function
    * Removes old payment records to manage storage space
-   * 
-   * @returns Number of payments cleaned up
+   *
+   * @returns Number of payments removed
    */
   const cleanupOldPayments = () => {
     return localStorageManager.cleanupOldPayments();
@@ -177,20 +195,20 @@ export const usePaymentProcessing = () => {
   /**
    * Get Payment History Function
    * Retrieves all stored payment records
-   * 
+   *
    * @returns Array of all stored payments
    */
   const getPaymentHistory = () => {
     return localStorageManager.getAllPayments();
   };
 
-  // Return all functions and state for use in components
+  // Expose the hook’s API: functions & current processing flag
   return {
-    processPayment,        // Main payment processing function
-    getPaymentData,        // Retrieve payment by reference
-    completePayment,       // Update payment status
-    cleanupOldPayments,    // Clean up old records
-    getPaymentHistory,     // Get all payment records
-    isProcessing          // Current processing state
+    processPayment,        // Initiates a payment
+    getPaymentData,        // Fetches a single payment by reference
+    completePayment,       // Marks a payment as completed/failed
+    cleanupOldPayments,    // Deletes aged payment entries
+    getPaymentHistory,     // Lists all stored payments
+    isProcessing           // UI flag: true when processing
   };
 };
