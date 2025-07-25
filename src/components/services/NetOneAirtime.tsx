@@ -7,6 +7,7 @@ import FormField from '../FormField';
 import LoadingButton from '../LoadingButton';
 import { ArrowLeft } from 'lucide-react';
 import { BASE_URL } from '../../utils/api';
+import axios from 'axios';
 
 interface NetOneAirtimeForm {
   phoneNumber: string;
@@ -27,11 +28,11 @@ const NetOneAirtime: React.FC = () => {
   useEffect(() => {
     const fetchStock = async () => {
       try {
-        const response = await fetch(`${BASE_URL}/api/check-stock/35`);
-        const data = await response.json();
-        const amounts = data.stock.map((item: any) => item.amount);
+        const response = await axios.get(`${BASE_URL}/api/check-stock/35`);
+        // axios puts actual payload on response.data
+        const amounts = response.data.stock.map((item: any) => item.amount);
         setPredefinedAmounts(amounts);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Failed to fetch stock:', error);
         dispatch({ type: 'SET_ERROR', payload: 'Failed to load stock amounts' });
       } finally {

@@ -9,6 +9,7 @@ import FormField from '../FormField';
 import LoadingButton from '../LoadingButton';
 import { Wifi, ArrowLeft } from 'lucide-react';
 import { BASE_URL } from '../../utils/api';
+import axios from 'axios';
 
 interface TelOneBroadbandForm {
   accountNumber: string;
@@ -37,15 +38,14 @@ const TelOneBroadband: React.FC = () => {
     const fetchBundles = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${BASE_URL}/api/check-stock/40`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json() as { stock: any[] };
-        const mapped: BundleOption[] = json.stock.map(item => ({
+        const response = await axios.get<{ stock: any[] }>(`${BASE_URL}/api/check-stock/40`);
+        const mapped: BundleOption[] = response.data.stock.map(item => ({
           id: item.productCode,
           name: item.name,
           price: item.amount,
         }));
         setBundles(mapped);
+  
         if (mapped.length) {
           setValue('bundle', mapped[0].id);
         }

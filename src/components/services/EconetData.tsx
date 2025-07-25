@@ -7,7 +7,7 @@ import FormField from '../FormField';
 import LoadingButton from '../LoadingButton';
 import { Smartphone, ArrowLeft } from 'lucide-react';
 import { BASE_URL } from '../../utils/api';
-
+import axios from 'axios';
 
 interface EconetDataForm {
   phoneNumber: string;
@@ -35,16 +35,14 @@ const EconetData: React.FC = () => {
     const fetchBundles = async () => {
       setBundlesLoading(true);
       try {
-        const res = await fetch(`${BASE_URL}/api/check-stock/111`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json() as { stock: any[] };
-        const mapped = json.stock.map(item => ({
+        const response = await axios.get<{ stock: any[] }>(`${BASE_URL}/api/check-stock/111`);
+        const mapped = response.data.stock.map(item => ({
           id: item.productCode,
           name: item.name,
           price: item.amount,
         }));
         setDataBundles(mapped);
-
+  
         // default-select first bundle
         if (mapped.length) {
           setValue('bundle', mapped[0].id);
