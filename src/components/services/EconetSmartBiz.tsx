@@ -6,6 +6,8 @@ import { validateEconetNumber } from '../../utils/validators';
 import FormField from '../FormField';
 import LoadingButton from '../LoadingButton';
 import { Smartphone, ArrowLeft } from 'lucide-react';
+import { BASE_URL } from '../../utils/api';
+
 
 interface EconetDataForm {
   phoneNumber: string;
@@ -33,7 +35,7 @@ const EconetSmartBiz: React.FC = () => {
     const fetchBundles = async () => {
       setBundlesLoading(true);
       try {
-        const res = await fetch('http://localhost:8080/api/check-stock/47');
+        const res = await fetch(`${BASE_URL}/api/check-stock/47`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json() as { stock: any[] };
         const mapped = json.stock.map(item => ({

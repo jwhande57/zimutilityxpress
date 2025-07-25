@@ -6,7 +6,7 @@ import { validateNetOneNumber } from '../../utils/validators';
 import FormField from '../FormField';
 import LoadingButton from '../LoadingButton';
 import { ArrowLeft } from 'lucide-react';
-import { useStockAmounts } from '../../hooks/useStockAmounts';
+import { BASE_URL } from '../../utils/api';
 
 interface NetOneAirtimeForm {
   phoneNumber: string;
@@ -16,11 +16,31 @@ const NetOneAirtime: React.FC = () => {
   const { state, dispatch } = usePayment();
   const { processPayment, isProcessing } = usePaymentProcessing();
 
-  const { amounts: predefinedAmounts, loading: amountsLoading } = useStockAmounts(35);
-  const [selectedAmount, setSelectedAmount] = useState<number>(0);
+  // 🚨 Replacing useStockAmounts
+  const [predefinedAmounts, setPredefinedAmounts] = useState<number[]>([]);
+  const [amountsLoading, setAmountsLoading] = useState<boolean>(true);
 
+  const [selectedAmount, setSelectedAmount] = useState<number>(0);
   const { register, handleSubmit, formState: { errors } } = useForm<NetOneAirtimeForm>();
 
+  // ✅ Fetch stock amounts on mount
+  useEffect(() => {
+    const fetchStock = async () => {
+      try {
+        const response = await fetch(`${BASE_URL}/api/check-stock/35`);
+        const data = await response.json();
+        const amounts = data.stock.map((item: any) => item.amount);
+        setPredefinedAmounts(amounts);
+      } catch (error) {
+        console.error('Failed to fetch stock:', error);
+        dispatch({ type: 'SET_ERROR', payload: 'Failed to load stock amounts' });
+      } finally {
+        setAmountsLoading(false);
+      }
+    };
+
+    fetchStock();
+  }, [dispatch]);
 
   const onSubmit = async (data: NetOneAirtimeForm) => {
     dispatch({ type: 'SET_LOADING', payload: true });
@@ -33,6 +53,7 @@ const NetOneAirtime: React.FC = () => {
           serviceType: 'airtime',
         },
       });
+
       if (result.success && result.redirectUrl) {
         window.location.href = result.redirectUrl;
       } else {

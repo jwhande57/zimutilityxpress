@@ -8,6 +8,7 @@ import { validateTelOneAccount, validateZimMobileNumber } from '../../utils/vali
 import FormField from '../FormField';
 import LoadingButton from '../LoadingButton';
 import { Wifi, ArrowLeft } from 'lucide-react';
+import { BASE_URL } from '../../utils/api';
 
 interface TelOneBroadbandForm {
   accountNumber: string;
@@ -36,7 +37,7 @@ const TelOneBroadband: React.FC = () => {
     const fetchBundles = async () => {
       setLoading(true);
       try {
-        const res = await fetch('http://localhost:8080/api/check-stock/40');
+        const res = await fetch(`${BASE_URL}/api/check-stock/40`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json() as { stock: any[] };
         const mapped: BundleOption[] = json.stock.map(item => ({
