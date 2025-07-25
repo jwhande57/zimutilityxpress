@@ -55,7 +55,7 @@ const MainContent: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           {/* Top Navbar Row */}
           <div className="flex items-center justify-between">
             {/* Left Side: Flag + Location */}
@@ -89,8 +89,8 @@ const MainContent: React.FC = () => {
       </header>
 
       {/* Services Grid */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <ServiceCard
             id="econet-airtime"
             title="Econet Airtime"
