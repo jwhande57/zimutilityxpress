@@ -1,9 +1,7 @@
-// "productId": 41
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
 import { usePayment } from '../../contexts/PaymentContext';
-import { usePaymentProcessing } from '../../hooks/usePaymentProcessing';
 import { validateTelOneAccount, validateZimMobileNumber } from '../../utils/validators';
 import FormField from '../FormField';
 import LoadingButton from '../LoadingButton';
@@ -23,17 +21,29 @@ interface BundleOption {
   price: number;
 }
 
+// Mock API function to simulate payment initiation
+const mockApiCall = (accountNumber: string, bundle: string, phoneNumber: string, amount: number) => {
+  return new Promise<{ txref: string; amountMicro: number; assetId: string; receiveAddr: string }>((resolve) => {
+    setTimeout(() => {
+      resolve({
+        txref: `tx_${Date.now()}`,
+        amountMicro: Math.floor(amount * 1e6),
+        assetId: 'USDC',
+        receiveAddr: '0x1234567890abcdef',
+      });
+    }, 1000);
+  });
+};
+
 const TelOneBroadband: React.FC = () => {
+  const navigate = useNavigate();
   const { state, dispatch } = usePayment();
-  const { processPayment, isProcessing } = usePaymentProcessing();
   const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm<TelOneBroadbandForm>();
 
-  // --- local state for fetched bundles ---
   const [bundles, setBundles] = useState<BundleOption[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // fetch on mount
   useEffect(() => {
     const fetchBundles = async () => {
       setLoading(true);
@@ -45,7 +55,6 @@ const TelOneBroadband: React.FC = () => {
           price: item.amount,
         }));
         setBundles(mapped);
-  
         if (mapped.length) {
           setValue('bundle', mapped[0].id);
         }
@@ -69,29 +78,26 @@ const TelOneBroadband: React.FC = () => {
     dispatch({ type: 'SET_LOADING', payload: true });
     try {
       const bundleInfo = bundles.find(b => b.id === data.bundle);
-      const result = await processPayment({
-        service: 'TelOne Broadband',
-        amount: bundleInfo?.price ?? 0,
-        customerData: {
-          accountNumber: data.accountNumber,
-          bundle: bundleInfo?.name ?? data.bundle,
-          phoneNumber: data.phoneNumber,
-          serviceType: 'broadband',
+      const amount = bundleInfo?.price ?? 0;
+      const paymentData = await mockApiCall(data.accountNumber, data.bundle, data.phoneNumber, amount);
+
+      navigate('/make-payment', {
+        state: {
+          service: 'TelOne Broadband',
+          amount,
+          customerData: { accountNumber: data.accountNumber, bundle: bundleInfo?.name ?? data.bundle, phoneNumber: data.phoneNumber },
+          paymentData,
         },
       });
-      if (result.success && result.redirectUrl) {
-        window.location.href = result.redirectUrl;
-      } else {
-        dispatch({ type: 'SET_ERROR', payload: result.error || 'Payment processing failed' });
-      }
-    } catch {
-      dispatch({ type: 'SET_ERROR', payload: 'Payment processing failed. Please try again.' });
+    } catch (error) {
+      dispatch({ type: 'SET_ERROR', payload: 'Failed to initiate payment' });
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
 
   return (
     <div className="bg-white rounded-2xl shadow-lg p-6">
-      {/* Header */}
       <div className="flex items-center mb-6">
         <button
           onClick={() => dispatch({ type: 'SELECT_SERVICE', payload: null })}
@@ -105,14 +111,12 @@ const TelOneBroadband: React.FC = () => {
         </div>
       </div>
 
-      {/* Load error */}
       {error && (
         <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded-xl mb-4 text-sm">
           {error}
         </div>
       )}
 
-      {/* Form */}
       <form onSubmit={handleSubmit(onSubmit)}>
         <FormField
           label="Account Number"
@@ -168,14 +172,10 @@ const TelOneBroadband: React.FC = () => {
         />
 
         <LoadingButton
-          isLoading={state.isLoading || isProcessing}
-          disabled={loading}
+          isLoading={state.isLoading}
           className="bg-gradient-to-r from-sky-400 to-sky-500 hover:shadow-lg"
         >
-          {state.isLoading || isProcessing
-            ? 'Processing...'
-            : `Pay $${getSelectedBundlePrice().toFixed(2)}`
-          }
+          {state.isLoading ? 'Processing...' : `Pay $${getSelectedBundlePrice().toFixed(2)}`}
         </LoadingButton>
       </form>
     </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
 import { usePayment } from '../../contexts/PaymentContext';
-import { usePaymentProcessing } from '../../hooks/usePaymentProcessing';
 import { validateNetOneNumber } from '../../utils/validators';
 import FormField from '../FormField';
 import LoadingButton from '../LoadingButton';
@@ -13,23 +13,32 @@ interface NetOneAirtimeForm {
   phoneNumber: string;
 }
 
-const NetOneAirtime: React.FC = () => {
-  const { state, dispatch } = usePayment();
-  const { processPayment, isProcessing } = usePaymentProcessing();
+// Mock API function to simulate payment initiation
+const mockApiCall = (phoneNumber: string, amount: number) => {
+  return new Promise<{ txref: string; amountMicro: number; assetId: string; receiveAddr: string }>((resolve) => {
+    setTimeout(() => {
+      resolve({
+        txref: `tx_${Date.now()}`,
+        amountMicro: Math.floor(amount * 1e6),
+        assetId: 'USDC',
+        receiveAddr: '0x1234567890abcdef',
+      });
+    }, 1000);
+  });
+};
 
-  // 🚨 Replacing useStockAmounts
+const NetOneAirtime: React.FC = () => {
+  const navigate = useNavigate();
+  const { state, dispatch } = usePayment();
   const [predefinedAmounts, setPredefinedAmounts] = useState<number[]>([]);
   const [amountsLoading, setAmountsLoading] = useState<boolean>(true);
-
   const [selectedAmount, setSelectedAmount] = useState<number>(0);
   const { register, handleSubmit, formState: { errors } } = useForm<NetOneAirtimeForm>();
 
-  // ✅ Fetch stock amounts on mount
   useEffect(() => {
     const fetchStock = async () => {
       try {
         const response = await axios.get(`${BASE_URL}/api/check-stock/35`);
-        // axios puts actual payload on response.data
         const amounts = response.data.stock.map((item: any) => item.amount);
         setPredefinedAmounts(amounts);
       } catch (error: any) {
@@ -39,35 +48,31 @@ const NetOneAirtime: React.FC = () => {
         setAmountsLoading(false);
       }
     };
-
     fetchStock();
   }, [dispatch]);
 
   const onSubmit = async (data: NetOneAirtimeForm) => {
     dispatch({ type: 'SET_LOADING', payload: true });
     try {
-      const result = await processPayment({
-        service: 'NetOne Airtime',
-        amount: selectedAmount,
-        customerData: {
-          phoneNumber: data.phoneNumber,
-          serviceType: 'airtime',
+      const paymentData = await mockApiCall(data.phoneNumber, selectedAmount);
+
+      navigate('/make-payment', {
+        state: {
+          service: 'NetOne Airtime',
+          amount: selectedAmount,
+          customerData: { phoneNumber: data.phoneNumber },
+          paymentData,
         },
       });
-
-      if (result.success && result.redirectUrl) {
-        window.location.href = result.redirectUrl;
-      } else {
-        dispatch({ type: 'SET_ERROR', payload: result.error || 'Payment processing failed' });
-      }
-    } catch {
-      dispatch({ type: 'SET_ERROR', payload: 'Payment processing failed. Please try again.' });
+    } catch (error) {
+      dispatch({ type: 'SET_ERROR', payload: 'Failed to initiate payment' });
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
 
   return (
     <div className="bg-white rounded-2xl shadow-lg p-6">
-      {/* Header */}
       <div className="flex items-center mb-6">
         <button
           onClick={() => dispatch({ type: 'SELECT_SERVICE', payload: null })}
@@ -81,14 +86,12 @@ const NetOneAirtime: React.FC = () => {
         </div>
       </div>
 
-      {/* Error */}
       {state.error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl mb-4">
           {state.error}
         </div>
       )}
 
-      {/* Form */}
       <form onSubmit={handleSubmit(onSubmit)}>
         <FormField
           label="Phone Number"
@@ -98,12 +101,10 @@ const NetOneAirtime: React.FC = () => {
           error={errors.phoneNumber}
           validation={{
             required: 'Phone number is required',
-            validate: (value: string) =>
-              validateNetOneNumber(value) || 'Please enter a valid NetOne number (071)',
+            validate: (value: string) => validateNetOneNumber(value) || 'Please enter a valid NetOne number (071)',
           }}
         />
 
-        {/* Amount Selection */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Select Amount (USD)
@@ -134,16 +135,11 @@ const NetOneAirtime: React.FC = () => {
           )}
         </div>
 
-        {/* Submit */}
         <LoadingButton
-          isLoading={state.isLoading || isProcessing}
+          isLoading={state.isLoading}
           className="w-full bg-gradient-to-r from-orange-400 to-orange-500 hover:shadow-lg"
-          disabled={amountsLoading}
         >
-          {state.isLoading || isProcessing
-            ? 'Processing…'
-            : `Pay $${selectedAmount.toFixed(2)}`
-          }
+          {state.isLoading ? 'Processing…' : `Pay $${selectedAmount.toFixed(2)}`}
         </LoadingButton>
       </form>
     </div>

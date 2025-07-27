@@ -1,9 +1,7 @@
-// "productId": 41
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
 import { usePayment } from '../../contexts/PaymentContext';
-import { usePaymentProcessing } from '../../hooks/usePaymentProcessing';
 import { validateMeterNumber, validateZimMobileNumber } from '../../utils/validators';
 import FormField from '../FormField';
 import LoadingButton from '../LoadingButton';
@@ -14,13 +12,24 @@ interface ZESAElectricityForm {
   phoneNumber: string;
 }
 
-const ZESAElectricity: React.FC = () => {
-  const { state, dispatch } = usePayment();
-  const { processPayment, isProcessing } = usePaymentProcessing();
-  
-  // default $5, enforced by slider min
-  const [selectedAmount, setSelectedAmount] = useState<number>(5);
+// Mock API function to simulate payment initiation
+const mockApiCall = (meterNumber: string, phoneNumber: string, amount: number) => {
+  return new Promise<{ txref: string; amountMicro: number; assetId: string; receiveAddr: string }>((resolve) => {
+    setTimeout(() => {
+      resolve({
+        txref: `tx_${Date.now()}`,
+        amountMicro: Math.floor(amount * 1e6),
+        assetId: 'USDC',
+        receiveAddr: '0x1234567890abcdef',
+      });
+    }, 1000);
+  });
+};
 
+const ZESAElectricity: React.FC = () => {
+  const navigate = useNavigate();
+  const { state, dispatch } = usePayment();
+  const [selectedAmount, setSelectedAmount] = useState<number>(5);
   const { register, handleSubmit, formState: { errors } } = useForm<ZESAElectricityForm>();
 
   const quickAmounts = [5, 10, 20, 50, 100];
@@ -28,28 +37,25 @@ const ZESAElectricity: React.FC = () => {
   const onSubmit = async (data: ZESAElectricityForm) => {
     dispatch({ type: 'SET_LOADING', payload: true });
     try {
-      const result = await processPayment({
-        service: 'ZESA Electricity',
-        amount: selectedAmount,
-        customerData: {
-          meterNumber: data.meterNumber,
-          phoneNumber: data.phoneNumber,
-          serviceType: 'electricity',
+      const paymentData = await mockApiCall(data.meterNumber, data.phoneNumber, selectedAmount);
+
+      navigate('/make-payment', {
+        state: {
+          service: 'ZESA Electricity',
+          amount: selectedAmount,
+          customerData: { meterNumber: data.meterNumber, phoneNumber: data.phoneNumber },
+          paymentData,
         },
       });
-      if (result.success && result.redirectUrl) {
-        window.location.href = result.redirectUrl;
-      } else {
-        dispatch({ type: 'SET_ERROR', payload: result.error || 'Payment processing failed' });
-      }
-    } catch {
-      dispatch({ type: 'SET_ERROR', payload: 'Payment processing failed. Please try again.' });
+    } catch (error) {
+      dispatch({ type: 'SET_ERROR', payload: 'Failed to initiate payment' });
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
 
   return (
     <div className="bg-white rounded-2xl shadow-lg p-6">
-      {/* Header */}
       <div className="flex items-center mb-6">
         <button
           onClick={() => dispatch({ type: 'SELECT_SERVICE', payload: null })}
@@ -63,7 +69,6 @@ const ZESAElectricity: React.FC = () => {
         </div>
       </div>
 
-      {/* Error */}
       {state.error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl mb-4">
           {state.error}
@@ -95,13 +100,11 @@ const ZESAElectricity: React.FC = () => {
           }}
         />
 
-        {/* Amount Selection */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Amount (USD) <span className="text-gray-500">(Min $5, Max $500)</span>
           </label>
 
-          {/* Quick‑select buttons */}
           <div className="grid grid-cols-5 gap-2 mb-4">
             {quickAmounts.map((amt) => (
               <button
@@ -119,7 +122,6 @@ const ZESAElectricity: React.FC = () => {
             ))}
           </div>
 
-          {/* Slider */}
           <div className="flex items-center space-x-4">
             <span className="text-sm text-gray-600">${selectedAmount}</span>
             <input
@@ -136,13 +138,10 @@ const ZESAElectricity: React.FC = () => {
         </div>
 
         <LoadingButton
-          isLoading={state.isLoading || isProcessing}
+          isLoading={state.isLoading}
           className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 hover:shadow-lg"
         >
-          {state.isLoading || isProcessing
-            ? 'Processing...'
-            : `Pay $${selectedAmount.toFixed(2)}`
-          }
+          {state.isLoading ? 'Processing...' : `Pay $${selectedAmount.toFixed(2)}`}
         </LoadingButton>
       </form>
     </div>

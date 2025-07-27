@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
 import { usePayment } from '../../contexts/PaymentContext';
-import { usePaymentProcessing } from '../../hooks/usePaymentProcessing';
 import { validateEconetNumber } from '../../utils/validators';
 import FormField from '../FormField';
 import LoadingButton from '../LoadingButton';
@@ -20,17 +20,29 @@ interface BundleOption {
   price: number;
 }
 
+// Mock API function to simulate payment initiation
+const mockApiCall = (phoneNumber: string, bundle: string, amount: number) => {
+  return new Promise<{ txref: string; amountMicro: number; assetId: string; receiveAddr: string }>((resolve) => {
+    setTimeout(() => {
+      resolve({
+        txref: `tx_${Date.now()}`,
+        amountMicro: Math.floor(amount * 1e6),
+        assetId: 'USDC',
+        receiveAddr: '0x1234567890abcdef',
+      });
+    }, 1000);
+  });
+};
+
 const EconetData: React.FC = () => {
+  const navigate = useNavigate();
   const { state, dispatch } = usePayment();
-  const { processPayment, isProcessing } = usePaymentProcessing();
   const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm<EconetDataForm>();
 
-  // --- dynamic bundle state & loading ---
   const [dataBundles, setDataBundles] = useState<BundleOption[]>([]);
   const [bundlesLoading, setBundlesLoading] = useState<boolean>(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
-  // 1) fetch on mount
   useEffect(() => {
     const fetchBundles = async () => {
       setBundlesLoading(true);
@@ -42,8 +54,6 @@ const EconetData: React.FC = () => {
           price: item.amount,
         }));
         setDataBundles(mapped);
-  
-        // default-select first bundle
         if (mapped.length) {
           setValue('bundle', mapped[0].id);
         }
@@ -57,10 +67,7 @@ const EconetData: React.FC = () => {
     fetchBundles();
   }, [setValue]);
 
-  // reflect selected bundle in form
   const selectedBundleId = watch('bundle');
-
-  // helper to get price
   const getSelectedBundlePrice = () => {
     const bundle = dataBundles.find(b => b.id === selectedBundleId);
     return bundle?.price ?? 0;
@@ -70,29 +77,26 @@ const EconetData: React.FC = () => {
     dispatch({ type: 'SET_LOADING', payload: true });
     try {
       const bundle = dataBundles.find(b => b.id === data.bundle);
-      const result = await processPayment({
-        service: 'Econet Data Bundles',
-        amount: bundle?.price ?? 0,
-        customerData: {
-          phoneNumber: data.phoneNumber,
-          bundle: bundle?.name ?? data.bundle,
-          serviceType: 'data',
+      const amount = bundle?.price ?? 0;
+      const paymentData = await mockApiCall(data.phoneNumber, data.bundle, amount);
+
+      navigate('/make-payment', {
+        state: {
+          service: 'Econet Data Bundles',
+          amount,
+          customerData: { phoneNumber: data.phoneNumber, bundle: bundle?.name ?? data.bundle },
+          paymentData,
         },
       });
-
-      if (result.success && result.redirectUrl) {
-        window.location.href = result.redirectUrl;
-      } else {
-        dispatch({ type: 'SET_ERROR', payload: result.error || 'Payment processing failed' });
-      }
-    } catch (err) {
-      dispatch({ type: 'SET_ERROR', payload: 'Payment processing failed. Please try again.' });
+    } catch (error) {
+      dispatch({ type: 'SET_ERROR', payload: 'Failed to initiate payment' });
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
 
   return (
     <div className="bg-white rounded-2xl shadow-lg p-6">
-      {/* Header */}
       <div className="flex items-center mb-6">
         <button
           onClick={() => dispatch({ type: 'SELECT_SERVICE', payload: null })}
@@ -106,14 +110,12 @@ const EconetData: React.FC = () => {
         </div>
       </div>
 
-      {/* Loading error */}
       {fetchError && (
         <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded-xl mb-4 text-sm">
           Could not load bundles: {fetchError}
         </div>
       )}
 
-      {/* Form */}
       <form onSubmit={handleSubmit(onSubmit)}>
         <FormField
           label="Phone Number"
@@ -123,8 +125,7 @@ const EconetData: React.FC = () => {
           error={errors.phoneNumber}
           validation={{
             required: 'Phone number is required',
-            validate: (value: string) =>
-              validateEconetNumber(value) || 'Please enter a valid Econet number (077/078)',
+            validate: (value: string) => validateEconetNumber(value) || 'Please enter a valid Econet number (077/078)',
           }}
         />
 
@@ -158,14 +159,10 @@ const EconetData: React.FC = () => {
         </FormField>
 
         <LoadingButton
-          isLoading={state.isLoading || isProcessing}
-          disabled={bundlesLoading}
+          isLoading={state.isLoading}
           className="bg-gradient-to-r from-purple-500 to-purple-600 hover:shadow-lg"
         >
-          {state.isLoading || isProcessing
-            ? 'Processing...'
-            : `Pay $${getSelectedBundlePrice().toFixed(2)}`
-          }
+          {state.isLoading ? 'Processing...' : `Pay $${getSelectedBundlePrice().toFixed(2)}`}
         </LoadingButton>
       </form>
     </div>

@@ -1,12 +1,25 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
 import { usePayment } from '../../contexts/PaymentContext';
-import { usePaymentProcessing } from '../../hooks/usePaymentProcessing';
 import { validateEconetNumber } from '../../utils/validators';
 import FormField from '../FormField';
 import LoadingButton from '../LoadingButton';
 import { ArrowLeft } from 'lucide-react';
 
+// Mock API function to simulate backend response
+// This will be replaced with the actual API call later
+const mockApiCall = (phoneNumber: string, amount: number) => {
+  return new Promise<{ txref: string; amountMicro: number; assetId: string; receiveAddr: string }>((resolve) => {
+    setTimeout(() => {
+      const txref = `tx_${Date.now()}`; // Unique transaction reference
+      const amountMicro = Math.floor(amount * 1e6); // Convert amount to micro units (e.g., 0.2 USD -> 200000)
+      const assetId = "USDC"; // Hardcoded asset ID
+      const receiveAddr = "0x1234567890abcdef"; // Dummy receiving address
+      resolve({ txref, amountMicro, assetId, receiveAddr });
+    }, 1000); // Simulate network delay
+  });
+};
 
 /** Econet Airtime Form Interface */
 interface EconetAirtimeForm {
@@ -14,36 +27,39 @@ interface EconetAirtimeForm {
 }
 
 const EconetAirtime: React.FC = () => {
+  const navigate = useNavigate();
   const { state, dispatch } = usePayment();
-  const { processPayment, isProcessing } = usePaymentProcessing();
 
-  // 1) hard‑coded amounts
+  // Hard-coded amounts
   const predefinedAmounts = [0.2, 0.5, 1, 2, 5, 10, 20, 50];
 
-  // 2) local selection state, default to the first amount
+  // Local selection state, default to the first amount
   const [selectedAmount, setSelectedAmount] = useState<number>(predefinedAmounts[0]);
 
   const { register, handleSubmit, formState: { errors } } = useForm<EconetAirtimeForm>();
 
+  // Updated onSubmit function to include mock API call
   const onSubmit = async (data: EconetAirtimeForm) => {
     dispatch({ type: 'SET_LOADING', payload: true });
     try {
-      const result = await processPayment({
-        service: 'Econet Airtime',
-        amount: selectedAmount,
-        customerData: {
-          phoneNumber: data.phoneNumber,
-          serviceType: 'airtime',
-        },
+      // Call the mock API with phone number and selected amount
+      const response = await mockApiCall(data.phoneNumber, selectedAmount);
+      
+      // Navigate to /make-payment with the response data in state
+      navigate('/make-payment', {
+        state: {
+          service: 'Econet Airtime',
+          amount: selectedAmount,
+          customerData: { phoneNumber: data.phoneNumber },
+          paymentData: response // Include the API response
+        }
       });
-      if (result.success && result.redirectUrl) {
-        window.location.href = result.redirectUrl;
-      } else {
-        dispatch({ type: 'SET_ERROR', payload: result.error || 'Payment processing failed' });
-      }
-    } catch {
-      dispatch({ type: 'SET_ERROR', payload: 'Payment processing failed. Please try again.' });
+    } catch (error) {
+      // Handle potential errors (mock API always succeeds, but included for future real API)
+      dispatch({ type: 'SET_ERROR', payload: 'Failed to initiate payment' });
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
+    // Note: Loading state is not set to false here; assume /make-payment handles it
   };
 
   return (
@@ -110,11 +126,11 @@ const EconetAirtime: React.FC = () => {
 
         {/* Submit */}
         <LoadingButton
-          isLoading={state.isLoading || isProcessing}
+          isLoading={state.isLoading}
           className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:shadow-lg"
         >
-          {state.isLoading || isProcessing
-            ? 'Processing…'
+          {state.isLoading
+            ? 'Redirecting…'
             : `Pay $${selectedAmount.toFixed(2)}`
           }
         </LoadingButton>

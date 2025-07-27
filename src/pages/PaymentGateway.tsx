@@ -1,124 +1,251 @@
+import React, { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import QRCode from "react-qr-code";
+import LoadingButton from "../components/LoadingButton";
+import { ArrowLeft, CheckCircle2, XCircle } from "lucide-react";
 
-import React, { useEffect, useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import { usePaymentProcessing } from '../hooks/usePaymentProcessing';
-import LoadingButton from '../components/LoadingButton';
+interface LocationState {
+  service: string;
+  amount: number;
+  customerData: Record<string, string>; // Flexible customer data for different services
+  paymentData: {
+    txref: string;
+    amountMicro: number;
+    assetId: string;
+    receiveAddr: string;
+  };
+}
+
+// Simulated API call
+const mockConfirm = (): Promise<boolean> =>
+  new Promise((resolve) =>
+    setTimeout(() => resolve(Math.random() < 0.7), 2000)
+  );
 
 const PaymentGateway: React.FC = () => {
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { getPaymentData, completePayment } = usePaymentProcessing();
-  const [paymentData, setPaymentData] = useState<any>(null);
+  const { service, amount, customerData, paymentData } = useLocation()
+    .state as LocationState;
+
+  const [step, setStep] = useState<"qr" | "confirm">("qr");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState<boolean | null>(null);
+  const transactionId = paymentData.txref; // Use txref from paymentData
+  const [timestamp] = useState(() => new Date().toLocaleString());
 
-  const reference = searchParams.get('ref');
-
-  useEffect(() => {
-    if (reference) {
-      const data = getPaymentData(reference);
-      if (data) {
-        setPaymentData(data);
-      } else {
-        navigate('/payment/error?error=invalid_reference');
-      }
-    } else {
-      navigate('/payment/error?error=missing_reference');
-    }
-  }, [reference, getPaymentData, navigate]);
-
-  const handlePaymentSuccess = async () => {
-    if (!reference) return;
-    
+  const handleConfirm = async () => {
     setIsProcessing(true);
-    
-    // Simulate payment gateway processing
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    const transactionId = `TXN${Date.now()}`;
-    completePayment(reference, 'success', transactionId);
-    
-    navigate(`/payment/success?ref=${reference}&txn=${transactionId}`);
+    const result = await mockConfirm();
+    setPaymentSuccess(result);
+    setIsProcessing(false);
   };
 
-  const handlePaymentFailure = async () => {
-    if (!reference) return;
-    
-    setIsProcessing(true);
-    
-    // Simulate payment gateway processing
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    completePayment(reference, 'failed');
-    
-    navigate(`/payment/failed?ref=${reference}`);
+  const handleReset = () => {
+    setStep("qr");
+    setPaymentSuccess(null);
   };
 
-  if (!paymentData) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading payment details...</p>
-        </div>
-      </div>
-    );
-  }
+  const qrValue = JSON.stringify({
+    service,
+    amount,
+    customerData,
+    paymentData,
+  });
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-md mx-auto">
         <div className="bg-white rounded-2xl shadow-lg p-6">
-          <div className="text-center mb-6">
-            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-blue-600 text-2xl">💳</span>
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900">Payment Gateway</h1>
-            <p className="text-gray-600 text-sm mt-2">
-              Reference: {reference}
-            </p>
-          </div>
-
-          <div className="bg-gray-50 rounded-xl p-4 mb-6">
-            <h3 className="font-semibold text-gray-900 mb-2">Payment Details</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Service:</span>
-                <span className="font-medium">{paymentData.service}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Amount:</span>
-                <span className="font-medium">${paymentData.amount.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Date:</span>
-                <span className="font-medium">
-                  {new Date(paymentData.timestamp).toLocaleDateString()}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <LoadingButton
-              isLoading={isProcessing}
-              onClick={handlePaymentSuccess}
-              className="bg-gradient-to-r from-green-500 to-green-600 hover:shadow-lg"
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <button
+              onClick={() => navigate(-1)}
+              className="text-gray-500 hover:text-gray-700"
+              aria-label="Go Back"
             >
-              {isProcessing ? 'Processing...' : 'Simulate Successful Payment'}
-            </LoadingButton>
-            
-            <LoadingButton
-              isLoading={isProcessing}
-              onClick={handlePaymentFailure}
-              className="bg-gradient-to-r from-red-500 to-red-600 hover:shadow-lg"
-              type="button"
-            >
-              {isProcessing ? 'Processing...' : 'Simulate Failed Payment'}
-            </LoadingButton>
+              <ArrowLeft size={20} />
+            </button>
+            <h1 className="text-xl font-bold text-gray-900 text-center flex-1">
+              {service}
+            </h1>
+            <div className="w-5" />
           </div>
 
-          <p className="text-xs text-gray-500 text-center mt-4">
-            This is a demo payment gateway. In production, you would be redirected to your payment provider.
+          {step === "qr" && (
+            <>
+              {/* QR Section */}
+              <div className="text-center mb-6">
+                <h2 className="text-gray-800 font-medium mb-2">Scan to Pay</h2>
+                <div className="bg-white p-4 rounded-xl shadow-inner inline-block">
+                  <QRCode value={qrValue} size={140} />
+                </div>
+                <p className="mt-2 text-sm text-gray-500">
+                  Or{" "}
+                  <button
+                    className="text-green-600 underline"
+                    onClick={() => window.open("mywallet://pay", "_blank")}
+                  >
+                    open your wallet
+                  </button>
+                </p>
+              </div>
+
+              {/* Transaction Summary */}
+              <div className="bg-gray-100 rounded-2xl p-5 mb-6 shadow-inner">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">
+                  Transaction Summary
+                </h3>
+
+                <div className="space-y-4 text-sm">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Service</span>
+                    <span className="font-medium text-gray-900">{service}</span>
+                  </div>
+
+                  {/* Dynamically display all customer data */}
+                  {Object.entries(customerData).map(([key, value]) => (
+                    <div
+                      key={key}
+                      className="flex justify-between items-center"
+                    >
+                      <span className="text-gray-600">{key}</span>
+                      <span className="font-medium text-gray-900">{value}</span>
+                    </div>
+                  ))}
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Transaction ID</span>
+                    <span className="font-mono text-gray-700">
+                      {transactionId}
+                    </span>
+                  </div>
+
+                  <div className="border-t pt-4 flex justify-between items-center text-base font-semibold">
+                    <span className="text-gray-800">Total Amount</span>
+                    <span className="text-green-600">${amount.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Confirm Button */}
+              <LoadingButton
+                isLoading={isProcessing}
+                onClick={() => {
+                  setStep("confirm");
+                  handleConfirm();
+                }}
+                className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:shadow-lg"
+              >
+                Confirm Payment
+              </LoadingButton>
+            </>
+          )}
+
+          {step === "confirm" && (
+            <>
+              {isProcessing ? (
+                <div className="flex flex-col items-center justify-center py-10">
+                  <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-green-600 border-solid mb-4" />
+                  <p className="text-green-700 font-semibold text-lg">
+                    Processing your payment...
+                  </p>
+                </div>
+              ) : paymentSuccess !== null ? (
+                <div
+                  className={`rounded-2xl p-6 shadow-md ${
+                    paymentSuccess ? "bg-green-50" : "bg-red-50"
+                  }`}
+                >
+                  {paymentSuccess ? (
+                    <>
+                      <div className="flex flex-col items-center text-green-700">
+                        <CheckCircle2 size={64} className="mb-4" />
+                        <h2 className="text-2xl font-bold mb-2">
+                          Payment Successful
+                        </h2>
+                        <p className="mb-6 text-gray-700 text-center max-w-sm">
+                          Thank you for your transaction. Your payment has been
+                          processed successfully.
+                        </p>
+
+                        <div className="w-full max-w-md bg-white rounded-xl shadow p-4 mb-6">
+                          <h3 className="font-semibold mb-3 text-gray-800">
+                            Transaction Details
+                          </h3>
+                          <div className="text-sm space-y-2">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Service:</span>
+                              <span className="font-medium">{service}</span>
+                            </div>
+                            {/* Dynamically display all customer data */}
+                            {Object.entries(customerData).map(
+                              ([key, value]) => (
+                                <div key={key} className="flex justify-between">
+                                  <span className="text-gray-600">{key}:</span>
+                                  <span className="font-medium">{value}</span>
+                                </div>
+                              )
+                            )}
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">
+                                Transaction ID:
+                              </span>
+                              <span className="font-mono">{transactionId}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">
+                                Amount Paid:
+                              </span>
+                              <span className="font-medium text-green-600">
+                                ${amount.toFixed(2)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">
+                                Date & Time:
+                              </span>
+                              <span>{timestamp}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => navigate("/")}
+                          className="px-6 py-2 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition"
+                        >
+                          Return Home
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex flex-col items-center text-red-700">
+                        <XCircle size={64} className="mb-4" />
+                        <h2 className="text-2xl font-bold mb-2">
+                          Payment Failed
+                        </h2>
+                        <p className="mb-6 text-gray-700 text-center max-w-sm">
+                          Unfortunately, the transaction was not completed.
+                          Please try again.
+                        </p>
+
+                        <button
+                          onClick={handleReset}
+                          className="px-6 py-2 bg-red-600 text-white rounded-xl font.PLAINmedium hover:bg-red-700 transition"
+                        >
+                          Retry Payment
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : null}
+            </>
+          )}
+
+          <p className="text-xs text-gray-400 text-center mt-6">
+            This is a simulated payment process. In production, this would
+            connect to a real payment gateway.
           </p>
         </div>
       </div>
