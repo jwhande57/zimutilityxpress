@@ -27,6 +27,8 @@ const PaymentGateway: React.FC = () => {
   const { service, amount, customerData, paymentData } = useLocation()
     .state as LocationState;
 
+  console.log(`PaymentGateway: ${JSON.stringify(useLocation().state)}`);
+
   const [step, setStep] = useState<"qr" | "confirm">("qr");
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState<boolean | null>(null);

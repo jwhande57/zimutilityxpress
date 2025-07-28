@@ -1,13 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
-import { usePayment } from '../../contexts/PaymentContext';
-import { validateTelOneAccount, validateZimMobileNumber } from '../../utils/validators';
-import FormField from '../FormField';
-import LoadingButton from '../LoadingButton';
-import { Wifi, ArrowLeft } from 'lucide-react';
-import { BASE_URL } from '../../utils/api';
-import axios from 'axios';
+import React, { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
+import { usePayment } from "../../contexts/PaymentContext";
+import {
+  validateTelOneAccount,
+  validateZimMobileNumber,
+} from "../../utils/validators";
+import FormField from "../FormField";
+import LoadingButton from "../LoadingButton";
+import { Wifi, ArrowLeft } from "lucide-react";
+import { BASE_URL } from "../../utils/api";
+import axios from "axios";
 
 interface TelOneBroadbandForm {
   accountNumber: string;
@@ -16,20 +19,30 @@ interface TelOneBroadbandForm {
 }
 
 interface BundleOption {
-  id: string;
+  productId: number; // ← new
+  id: string; // productCode
   name: string;
   price: number;
 }
 
-// Mock API function to simulate payment initiation
-const mockApiCall = (accountNumber: string, bundle: string, phoneNumber: string, amount: number) => {
-  return new Promise<{ txref: string; amountMicro: number; assetId: string; receiveAddr: string }>((resolve) => {
+const mockApiCall = (
+  accountNumber: string,
+  bundle: string,
+  phoneNumber: string,
+  amount: number
+) => {
+  return new Promise<{
+    txref: string;
+    amountMicro: number;
+    assetId: string;
+    receiveAddr: string;
+  }>((resolve) => {
     setTimeout(() => {
       resolve({
         txref: `tx_${Date.now()}`,
         amountMicro: Math.floor(amount * 1e6),
-        assetId: 'USDC',
-        receiveAddr: '0x1234567890abcdef',
+        assetId: "USDC",
+        receiveAddr: "0x1234567890abcdef",
       });
     }, 1000);
   });
@@ -38,7 +51,13 @@ const mockApiCall = (accountNumber: string, bundle: string, phoneNumber: string,
 const TelOneBroadband: React.FC = () => {
   const navigate = useNavigate();
   const { state, dispatch } = usePayment();
-  const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm<TelOneBroadbandForm>();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    watch,
+    setValue,
+  } = useForm<TelOneBroadbandForm>();
 
   const [bundles, setBundles] = useState<BundleOption[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -48,19 +67,22 @@ const TelOneBroadband: React.FC = () => {
     const fetchBundles = async () => {
       setLoading(true);
       try {
-        const response = await axios.get<{ stock: any[] }>(`${BASE_URL}/api/check-stock/40`);
-        const mapped: BundleOption[] = response.data.stock.map(item => ({
+        const response = await axios.get<{ stock: any[] }>(
+          `${BASE_URL}/api/check-stock/40`
+        );
+        const mapped: BundleOption[] = response.data.stock.map((item) => ({
+          productId: item.productId,
           id: item.productCode,
           name: item.name,
           price: item.amount,
         }));
         setBundles(mapped);
         if (mapped.length) {
-          setValue('bundle', mapped[0].id);
+          setValue("bundle", mapped[0].id);
         }
       } catch (err: any) {
         console.error(err);
-        setError(err.message || 'Failed to load bundles');
+        setError(err.message || "Failed to load bundles");
       } finally {
         setLoading(false);
       }
@@ -68,31 +90,42 @@ const TelOneBroadband: React.FC = () => {
     fetchBundles();
   }, [setValue]);
 
-  const selectedBundleId = watch('bundle');
+  const selectedBundleId = watch("bundle");
   const getSelectedBundlePrice = () => {
-    const b = bundles.find(x => x.id === selectedBundleId);
+    const b = bundles.find((x) => x.id === selectedBundleId);
     return b?.price ?? 0;
   };
 
   const onSubmit = async (data: TelOneBroadbandForm) => {
-    dispatch({ type: 'SET_LOADING', payload: true });
+    dispatch({ type: "SET_LOADING", payload: true });
     try {
-      const bundleInfo = bundles.find(b => b.id === data.bundle);
+      const bundleInfo = bundles.find((b) => b.id === data.bundle);
       const amount = bundleInfo?.price ?? 0;
-      const paymentData = await mockApiCall(data.accountNumber, data.bundle, data.phoneNumber, amount);
+      const paymentData = await mockApiCall(
+        data.accountNumber,
+        data.bundle,
+        data.phoneNumber,
+        amount
+      );
 
-      navigate('/make-payment', {
+      navigate("/make-payment", {
         state: {
-          service: 'TelOne Broadband',
+          service: "TelOne Broadband",
           amount,
-          customerData: { accountNumber: data.accountNumber, bundle: bundleInfo?.name ?? data.bundle, phoneNumber: data.phoneNumber },
+          customerData: {
+            accountNumber: data.accountNumber,
+            bundle: bundleInfo?.name ?? data.bundle,
+            phoneNumber: data.phoneNumber,
+          },
           paymentData,
+          productId: bundleInfo?.productId,
+          productCode: bundleInfo?.id,
         },
       });
     } catch (error) {
-      dispatch({ type: 'SET_ERROR', payload: 'Failed to initiate payment' });
+      dispatch({ type: "SET_ERROR", payload: "Failed to initiate payment" });
     } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
+      dispatch({ type: "SET_LOADING", payload: false });
     }
   };
 
@@ -100,13 +133,15 @@ const TelOneBroadband: React.FC = () => {
     <div className="bg-white rounded-2xl shadow-lg p-6">
       <div className="flex items-center mb-6">
         <button
-          onClick={() => dispatch({ type: 'SELECT_SERVICE', payload: null })}
+          onClick={() => dispatch({ type: "SELECT_SERVICE", payload: null })}
           className="mr-4 p-2 hover:bg-gray-100 rounded-full"
         >
           <ArrowLeft size={18} />
         </button>
         <div className="ml-3">
-          <h2 className="text-xl font-semibold text-gray-900">TelOne Broadband</h2>
+          <h2 className="text-xl font-semibold text-gray-900">
+            TelOne Broadband
+          </h2>
           <p className="text-gray-600">Purchase broadband packages</p>
         </div>
       </div>
@@ -125,8 +160,10 @@ const TelOneBroadband: React.FC = () => {
           register={register}
           error={errors.accountNumber}
           validation={{
-            required: 'Account number is required',
-            validate: v => validateTelOneAccount(v) || 'Please enter a valid TelOne account number',
+            required: "Account number is required",
+            validate: (v) =>
+              validateTelOneAccount(v) ||
+              "Please enter a valid TelOne account number",
           }}
         />
 
@@ -135,7 +172,7 @@ const TelOneBroadband: React.FC = () => {
           name="bundle"
           register={register}
           error={errors.bundle}
-          validation={{ required: 'Please select a bundle' }}
+          validation={{ required: "Please select a bundle" }}
         >
           {loading ? (
             <div className="flex justify-center py-4">
@@ -143,14 +180,14 @@ const TelOneBroadband: React.FC = () => {
             </div>
           ) : (
             <select
-              {...register('bundle', { required: 'Please select a bundle' })}
+              {...register("bundle", { required: "Please select a bundle" })}
               disabled={loading}
               className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors ${
-                errors.bundle ? 'border-red-500' : 'border-gray-300'
+                errors.bundle ? "border-red-500" : "border-gray-300"
               }`}
             >
               <option value="">Choose a bundle...</option>
-              {bundles.map(b => (
+              {bundles.map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.name} – ${b.price.toFixed(2)}
                 </option>
@@ -166,8 +203,10 @@ const TelOneBroadband: React.FC = () => {
           register={register}
           error={errors.phoneNumber}
           validation={{
-            required: 'Phone number is required',
-            validate: v => validateZimMobileNumber(v) || 'Please enter a valid Zimbabwean mobile number',
+            required: "Phone number is required",
+            validate: (v) =>
+              validateZimMobileNumber(v) ||
+              "Please enter a valid Zimbabwean mobile number",
           }}
         />
 
@@ -175,7 +214,9 @@ const TelOneBroadband: React.FC = () => {
           isLoading={state.isLoading}
           className="bg-gradient-to-r from-sky-400 to-sky-500 hover:shadow-lg"
         >
-          {state.isLoading ? 'Processing...' : `Pay $${getSelectedBundlePrice().toFixed(2)}`}
+          {state.isLoading
+            ? "Processing..."
+            : `Pay $${getSelectedBundlePrice().toFixed(2)}`}
         </LoadingButton>
       </form>
     </div>

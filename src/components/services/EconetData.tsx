@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
-import { usePayment } from '../../contexts/PaymentContext';
-import { validateEconetNumber } from '../../utils/validators';
-import FormField from '../FormField';
-import LoadingButton from '../LoadingButton';
-import { Smartphone, ArrowLeft } from 'lucide-react';
-import { BASE_URL } from '../../utils/api';
-import axios from 'axios';
+import React, { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
+import { usePayment } from "../../contexts/PaymentContext";
+import { validateEconetNumber } from "../../utils/validators";
+import FormField from "../FormField";
+import LoadingButton from "../LoadingButton";
+import { Smartphone, ArrowLeft } from "lucide-react";
+import { BASE_URL } from "../../utils/api";
+import axios from "axios";
 
 interface EconetDataForm {
   phoneNumber: string;
@@ -15,20 +15,25 @@ interface EconetDataForm {
 }
 
 interface BundleOption {
-  id: string;
+  productId: number; // ← new
+  id: string; // this is productCode
   name: string;
   price: number;
 }
 
-// Mock API function to simulate payment initiation
 const mockApiCall = (phoneNumber: string, bundle: string, amount: number) => {
-  return new Promise<{ txref: string; amountMicro: number; assetId: string; receiveAddr: string }>((resolve) => {
+  return new Promise<{
+    txref: string;
+    amountMicro: number;
+    assetId: string;
+    receiveAddr: string;
+  }>((resolve) => {
     setTimeout(() => {
       resolve({
         txref: `tx_${Date.now()}`,
         amountMicro: Math.floor(amount * 1e6),
-        assetId: 'USDC',
-        receiveAddr: '0x1234567890abcdef',
+        assetId: "USDC",
+        receiveAddr: "0x1234567890abcdef",
       });
     }, 1000);
   });
@@ -37,7 +42,13 @@ const mockApiCall = (phoneNumber: string, bundle: string, amount: number) => {
 const EconetData: React.FC = () => {
   const navigate = useNavigate();
   const { state, dispatch } = usePayment();
-  const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm<EconetDataForm>();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    watch,
+    setValue,
+  } = useForm<EconetDataForm>();
 
   const [dataBundles, setDataBundles] = useState<BundleOption[]>([]);
   const [bundlesLoading, setBundlesLoading] = useState<boolean>(true);
@@ -47,19 +58,22 @@ const EconetData: React.FC = () => {
     const fetchBundles = async () => {
       setBundlesLoading(true);
       try {
-        const response = await axios.get<{ stock: any[] }>(`${BASE_URL}/api/check-stock/111`);
-        const mapped = response.data.stock.map(item => ({
-          id: item.productCode,
+        const response = await axios.get<{ stock: any[] }>(
+          `${BASE_URL}/api/check-stock/111`
+        );
+        const mapped = response.data.stock.map((item) => ({
+          productId: item.productId, // ← capture productId
+          id: item.productCode, // ← this stays as id
           name: item.name,
           price: item.amount,
         }));
         setDataBundles(mapped);
         if (mapped.length) {
-          setValue('bundle', mapped[0].id);
+          setValue("bundle", mapped[0].id);
         }
       } catch (err: any) {
         console.error(err);
-        setFetchError(err.message || 'Unknown error');
+        setFetchError(err.message || "Unknown error");
       } finally {
         setBundlesLoading(false);
       }
@@ -67,31 +81,40 @@ const EconetData: React.FC = () => {
     fetchBundles();
   }, [setValue]);
 
-  const selectedBundleId = watch('bundle');
+  const selectedBundleId = watch("bundle");
   const getSelectedBundlePrice = () => {
-    const bundle = dataBundles.find(b => b.id === selectedBundleId);
+    const bundle = dataBundles.find((b) => b.id === selectedBundleId);
     return bundle?.price ?? 0;
   };
 
   const onSubmit = async (data: EconetDataForm) => {
-    dispatch({ type: 'SET_LOADING', payload: true });
+    dispatch({ type: "SET_LOADING", payload: true });
     try {
-      const bundle = dataBundles.find(b => b.id === data.bundle);
+      const bundle = dataBundles.find((b) => b.id === data.bundle);
       const amount = bundle?.price ?? 0;
-      const paymentData = await mockApiCall(data.phoneNumber, data.bundle, amount);
+      const paymentData = await mockApiCall(
+        data.phoneNumber,
+        data.bundle,
+        amount
+      );
 
-      navigate('/make-payment', {
+      navigate("/make-payment", {
         state: {
-          service: 'Econet Data Bundles',
+          service: "Econet Data Bundles",
           amount,
-          customerData: { phoneNumber: data.phoneNumber, bundle: bundle?.name ?? data.bundle },
+          customerData: {
+            phoneNumber: data.phoneNumber,
+            bundle: bundle?.name ?? data.bundle,
+          },
           paymentData,
+          productId: bundle?.productId, // ← pass through
+          productCode: bundle?.id, // ← pass through
         },
       });
     } catch (error) {
-      dispatch({ type: 'SET_ERROR', payload: 'Failed to initiate payment' });
+      dispatch({ type: "SET_ERROR", payload: "Failed to initiate payment" });
     } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
+      dispatch({ type: "SET_LOADING", payload: false });
     }
   };
 
@@ -99,14 +122,18 @@ const EconetData: React.FC = () => {
     <div className="bg-white rounded-2xl shadow-lg p-6">
       <div className="flex items-center mb-6">
         <button
-          onClick={() => dispatch({ type: 'SELECT_SERVICE', payload: null })}
+          onClick={() => dispatch({ type: "SELECT_SERVICE", payload: null })}
           className="mr-4 p-2 hover:bg-gray-100 rounded-full"
         >
           <ArrowLeft size={18} />
         </button>
         <div className="ml-3">
-          <h2 className="text-xl font-semibold text-gray-900">Econet Data Bundles</h2>
-          <p className="text-gray-600">Purchase data, voice, SMS and WhatsApp bundles</p>
+          <h2 className="text-xl font-semibold text-gray-900">
+            Econet Data Bundles
+          </h2>
+          <p className="text-gray-600">
+            Purchase data, voice, SMS and WhatsApp bundles
+          </p>
         </div>
       </div>
 
@@ -124,8 +151,10 @@ const EconetData: React.FC = () => {
           register={register}
           error={errors.phoneNumber}
           validation={{
-            required: 'Phone number is required',
-            validate: (value: string) => validateEconetNumber(value) || 'Please enter a valid Econet number (077/078)',
+            required: "Phone number is required",
+            validate: (value: string) =>
+              validateEconetNumber(value) ||
+              "Please enter a valid Econet number (077/078)",
           }}
         />
 
@@ -134,7 +163,7 @@ const EconetData: React.FC = () => {
           name="bundle"
           register={register}
           error={errors.bundle}
-          validation={{ required: 'Please select a data bundle' }}
+          validation={{ required: "Please select a data bundle" }}
         >
           {bundlesLoading ? (
             <div className="flex justify-center py-4">
@@ -142,10 +171,12 @@ const EconetData: React.FC = () => {
             </div>
           ) : (
             <select
-              {...register('bundle', { required: 'Please select a data bundle' })}
+              {...register("bundle", {
+                required: "Please select a data bundle",
+              })}
               disabled={bundlesLoading}
               className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors ${
-                errors.bundle ? 'border-red-500' : 'border-gray-300'
+                errors.bundle ? "border-red-500" : "border-gray-300"
               }`}
             >
               <option value="">Choose a bundle...</option>
@@ -162,7 +193,9 @@ const EconetData: React.FC = () => {
           isLoading={state.isLoading}
           className="bg-gradient-to-r from-purple-500 to-purple-600 hover:shadow-lg"
         >
-          {state.isLoading ? 'Processing...' : `Pay $${getSelectedBundlePrice().toFixed(2)}`}
+          {state.isLoading
+            ? "Processing..."
+            : `Pay $${getSelectedBundlePrice().toFixed(2)}`}
         </LoadingButton>
       </form>
     </div>
