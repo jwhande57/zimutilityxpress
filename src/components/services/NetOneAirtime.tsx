@@ -166,11 +166,6 @@ const NetOneAirtime: React.FC = () => {
         </LoadingButton>
       </form>
 
-      {selectedCode && (
-        <p className="mt-2 text-sm text-gray-600">
-          Selected bundle code: <strong>{selectedCode}</strong>
-        </p>
-      )}
     </div>
   );
 };

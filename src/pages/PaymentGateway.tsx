@@ -13,6 +13,8 @@ interface LocationState {
     amountMicro: number;
     assetId: string;
     receiveAddr: string;
+    productId: number;
+    productCode: string;
   };
 }
 
@@ -85,7 +87,7 @@ const PaymentGateway: React.FC = () => {
                   Or{" "}
                   <button
                     className="text-green-600 underline"
-                    onClick={() => window.open("mywallet://pay", "_blank")}
+                    onClick={() => window.open(`algorand://CA2IONEBEBM3CCE53CTUCOU6JHNFZSJKDTIHRDOTLU3AGNO6XULN2YFGUQ?amount=2000000&asset=732589810&note=tx_test_note_jerald`, "_blank")}
                   >
                     open your wallet
                   </button>
@@ -245,10 +247,10 @@ const PaymentGateway: React.FC = () => {
             </>
           )}
 
-          <p className="text-xs text-gray-400 text-center mt-6">
+         {/* <p className="text-xs text-gray-400 text-center mt-6">
             This is a simulated payment process. In production, this would
             connect to a real payment gateway.
-          </p>
+          </p>*/}
         </div>
       </div>
     </div>
