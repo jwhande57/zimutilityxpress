@@ -45,8 +45,8 @@ const MainContent: React.FC = () => {
 
   if (state.selectedService) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8 px-4">
-        <div className="max-w-md mx-auto">{renderSelectedService()}</div>
+      <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-lg mx-auto">{renderSelectedService()}</div>
       </div>
     );
   }
@@ -54,34 +54,28 @@ const MainContent: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow-sm">
+      <header className="bg-white shadow-md sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-          {/* Top Navbar Row */}
           <div className="flex items-center justify-between">
-            {/* Left Side: Flag + Location */}
             <div className="flex items-center gap-2">
               <span className="text-xl sm:text-2xl">🇿🇼</span>
-              <span className="text-sm text-gray-600 hidden sm:inline">
+              <span className="text-sm font-medium text-gray-600 hidden sm:inline">
                 Zimbabwe
               </span>
             </div>
-
-            {/* Right Side: Support Link */}
             <Link
               to="/support"
-              className="p-2 flex items-center gap-1 sm:gap-2 text-blue-600 hover:text-blue-800 transition-colors text-sm"
+              className="group flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-all duration-300 hover:bg-blue-50 rounded-full px-3 py-2"
             >
-              <MessageCircle size={18} />
-              <span className="hidden sm:inline">Support</span>
+              <MessageCircle size={18} className="transition-transform group-hover:scale-110" />
+              <span className="text-sm font-medium hidden sm:inline">Support</span>
             </Link>
           </div>
-
-          {/* Branding */}
           <div className="text-center mt-4 sm:mt-6">
-            <h1 className="text-lg sm:text-2xl font-bold text-gray-900">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">
               Utility Xpress
             </h1>
-            <p className="text-xs sm:text-base text-gray-600 mt-1 sm:mt-2">
+            <p className="text-sm sm:text-base text-gray-600 mt-2 max-w-md mx-auto">
               Top up, pay bills, and purchase services instantly
             </p>
           </div>
@@ -90,7 +84,7 @@ const MainContent: React.FC = () => {
 
       {/* Services Grid */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <ServiceCard
             id="econet-airtime"
             title="Econet Airtime"
@@ -145,16 +139,16 @@ const MainContent: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-10 text-center">
-        <p className="text-gray-500 text-sm mb-4">
+      <footer className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center">
+        <p className="text-sm text-gray-500 mb-4">
           Secure payments • 24/7 service • Instant processing
         </p>
         <Link
           to="/support"
-          className="p-2 inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors text-sm"
+          className="group inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-all duration-300 hover:bg-blue-50 rounded-full px-4 py-2"
         >
-          <MessageCircle size={16} />
-          Need help? Contact Support
+          <MessageCircle size={16} className="transition-transform group-hover:scale-110" />
+          <span className="text-sm font-medium">Need help? Contact Support</span>
         </Link>
       </footer>
     </div>

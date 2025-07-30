@@ -12,11 +12,32 @@ const NotFound = () => {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">404</h1>
-        <p className="text-xl text-gray-600 mb-4">Oops! Page not found</p>
-        <a href="/" className="text-blue-500 hover:text-blue-700 underline">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+      <div className="text-center bg-white rounded-2xl shadow-lg p-8 sm:p-12 max-w-md w-full transition-all duration-300 hover:shadow-xl">
+        <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4 tracking-tight">
+          404
+        </h1>
+        <p className="text-lg sm:text-xl text-gray-600 mb-6">
+          Oops! The page you're looking for doesn't exist.
+        </p>
+        <a
+          href="/"
+          className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-semibold text-sm sm:text-base transition-all duration-300 hover:bg-blue-50 rounded-full px-4 py-2"
+        >
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
           Return to Home
         </a>
       </div>
