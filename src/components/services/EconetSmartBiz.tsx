@@ -16,7 +16,7 @@ interface EconetDataForm {
 
 interface BundleOption {
   productId: number;
-  id: string; // productCode
+  id: string;
   name: string;
   price: number;
 }
@@ -111,29 +111,40 @@ const EconetSmartBiz: React.FC = () => {
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-6">
+    <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 max-w-lg mx-auto transition-all hover:shadow-2xl animate-in fade-in">
+      {/* Header */}
       <div className="flex items-center mb-6">
         <button
           onClick={() => dispatch({ type: "SELECT_SERVICE", payload: null })}
-          className="mr-4 p-2 hover:bg-gray-100 rounded-full"
+          className="group flex items-center gap-2 text-gray-700 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-full px-3 py-2 transition-all duration-300"
         >
-          <ArrowLeft size={18} />
+          <ArrowLeft size={18} className="transition-transform duration-300 group-hover:-translate-x-1" />
+          <span className="text-sm font-medium hidden sm:inline">Back</span>
         </button>
-        <div className="ml-3">
-          <h2 className="text-xl font-semibold text-gray-900">
+        <div className="ml-4">
+          <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 tracking-tight">
             Econet SmartBiz
           </h2>
-          <p className="text-gray-600">Purchase Unlimited Data Bundle</p>
+          <p className="text-sm sm:text-base text-gray-600 mt-1">
+            Purchase unlimited data bundle
+          </p>
         </div>
       </div>
 
+      {/* Errors */}
+      {state.error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6 text-sm animate-in slide-in-from-top duration-300">
+          {state.error}
+        </div>
+      )}
       {fetchError && (
-        <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded-xl mb-4 text-sm">
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-xl mb-6 text-sm animate-in slide-in-from-top duration-300">
           Could not load bundles: {fetchError}
         </div>
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        {/* Phone Number */}
         <FormField
           label="Phone Number"
           name="phoneNumber"
@@ -144,10 +155,11 @@ const EconetSmartBiz: React.FC = () => {
             required: "Phone number is required",
             validate: (value: string) =>
               validateEconetNumber(value) ||
-              "Please enter a valid Econet Smartbiz number (077/078)",
+              "Please enter a valid Econet number (077/078)",
           }}
         />
 
+        {/* Bundle Selection */}
         <FormField
           label="Select Data Bundle"
           name="bundle"
@@ -156,8 +168,11 @@ const EconetSmartBiz: React.FC = () => {
           validation={{ required: "Please select a data bundle" }}
         >
           {bundlesLoading ? (
-            <div className="flex justify-center py-4">
-              <div className="w-6 h-6 border-4 border-gray-200 border-t-purple-500 rounded-full animate-spin" />
+            <div className="flex justify-center py-6">
+              <div className="relative">
+                <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                <div className="absolute inset-0 w-8 h-8 border-4 border-blue-400/50 rounded-full animate-pulse" />
+              </div>
             </div>
           ) : (
             <select
@@ -165,9 +180,9 @@ const EconetSmartBiz: React.FC = () => {
                 required: "Please select a data bundle",
               })}
               disabled={bundlesLoading}
-              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors ${
+              className={`w-full px-4 py-3 rounded-xl border ${
                 errors.bundle ? "border-red-500" : "border-gray-300"
-              }`}
+              } focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition-colors duration-300`}
             >
               <option value="">Choose a bundle...</option>
               {dataBundles.map((b) => (
@@ -179,13 +194,19 @@ const EconetSmartBiz: React.FC = () => {
           )}
         </FormField>
 
+        {/* Submit Button */}
         <LoadingButton
           isLoading={state.isLoading}
-          className="bg-gradient-to-r from-blue-500 to-purple-600 hover:shadow-lg"
+          className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl py-3 font-semibold hover:shadow-xl hover:bg-opacity-90 transition-all duration-300"
         >
-          {state.isLoading
-            ? "Processing..."
-            : `Pay $${getSelectedBundlePrice().toFixed(2)}`}
+          {state.isLoading ? (
+            <div className="flex items-center justify-center gap-2">
+              <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin" />
+              Processing…
+            </div>
+          ) : (
+            `Pay $${getSelectedBundlePrice().toFixed(2)}`
+          )}
         </LoadingButton>
       </form>
     </div>

@@ -9,13 +9,11 @@ import { ArrowLeft } from "lucide-react";
 import { BASE_URL } from "../../utils/api";
 import axios from "axios";
 
-// Define form data interface
 interface EconetDataForm {
   phoneNumber: string;
   bundle: string;
 }
 
-// Define bundle option interface
 interface BundleOption {
   productId: number;
   id: string;
@@ -23,7 +21,6 @@ interface BundleOption {
   price: number;
 }
 
-// EconetData component: allows users to purchase Econet data bundles
 const EconetData: React.FC = () => {
   const navigate = useNavigate();
   const { state, dispatch } = usePayment();
@@ -39,7 +36,6 @@ const EconetData: React.FC = () => {
   const [bundlesLoading, setBundlesLoading] = useState<boolean>(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
-  // Fetch available bundles when the component mounts
   useEffect(() => {
     const fetchBundles = async () => {
       setBundlesLoading(true);
@@ -55,7 +51,7 @@ const EconetData: React.FC = () => {
         }));
         setDataBundles(mapped);
         if (mapped.length) {
-          setValue("bundle", mapped[0].id); // Set default bundle
+          setValue("bundle", mapped[0].id);
         }
       } catch (err: any) {
         console.error(err);
@@ -67,37 +63,30 @@ const EconetData: React.FC = () => {
     fetchBundles();
   }, [setValue]);
 
-  // Watch the selected bundle ID to calculate the price
   const selectedBundleId = watch("bundle");
   const getSelectedBundlePrice = () => {
     const bundle = dataBundles.find((b) => b.id === selectedBundleId);
     return bundle?.price ?? 0;
   };
-  // Handle form submission when "Pay" button is clicked
+
   const onSubmit = async (data: EconetDataForm) => {
-    // Indicate that the payment process is starting
     dispatch({ type: "SET_LOADING", payload: true });
     try {
-      // Find the selected bundle from the list
       const bundle = dataBundles.find((b) => b.id === data.bundle);
-
       if (!bundle) {
         throw new Error("Selected bundle not found");
       }
       const amount = bundle.price;
 
-      // Construct the request body as per requirements
       const requestBody = {
-        usd_amount: amount, // Price of the selected bundle
-        productId: bundle.productId, // Product ID from bundle
-        productCode: bundle.id, // Product code from bundle
-        target: data.phoneNumber, // Phone number as target
+        usd_amount: amount,
+        productId: bundle.productId,
+        productCode: bundle.id,
+        target: data.phoneNumber,
       };
 
-      // Send POST request to api/order endpoint
       const response = await axios.post(`${BASE_URL}/api/order`, requestBody);
 
-      // Ensure API call was successful, then navigate with response data
       navigate("/make-payment", {
         state: {
           service: "Econet Bundles",
@@ -111,53 +100,51 @@ const EconetData: React.FC = () => {
         },
       });
     } catch (error) {
-      // Handle and display errors if the API call fails
       let errorMessage = "Failed to initialize payment, please try again";
       if (axios.isAxiosError(error) && error.response) {
         errorMessage = error.response.data.message || errorMessage;
       }
       dispatch({ type: "SET_ERROR", payload: errorMessage });
     } finally {
-      // Reset loading state regardless of success or failure
       dispatch({ type: "SET_LOADING", payload: false });
     }
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-6">
-      {/* Header with back button and title */}
+    <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 max-w-lg mx-auto transition-all hover:shadow-2xl animate-in fade-in">
+      {/* Header */}
       <div className="flex items-center mb-6">
         <button
           onClick={() => dispatch({ type: "SELECT_SERVICE", payload: null })}
-          className="mr-4 p-2 hover:bg-gray-100 rounded-full"
+          className="group flex items-center gap-2 text-gray-700 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-full px-3 py-2 transition-all duration-300"
         >
-          <ArrowLeft size={18} />
+          <ArrowLeft size={18} className="transition-transform duration-300 group-hover:-translate-x-1" />
+          <span className="text-sm font-medium hidden sm:inline">Back</span>
         </button>
-        <div className="ml-3">
-          <h2 className="text-xl font-semibold text-gray-900">
+        <div className="ml-4">
+          <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 tracking-tight">
             Econet Data Bundles
           </h2>
-          <p className="text-gray-600">
-            Purchase data, voice, SMS and WhatsApp bundles
+          <p className="text-sm sm:text-base text-gray-600 mt-1">
+            Purchase data, voice, SMS, and WhatsApp bundles
           </p>
         </div>
       </div>
 
-      {/* Display submission error if it exists */}
+      {/* Errors */}
       {state.error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6 text-sm animate-in slide-in-from-top duration-300">
           {state.error}
         </div>
       )}
-      {/* Display bundle fetch error if it exists */}
       {fetchError && (
-        <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded-xl mb-4 text-sm">
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-xl mb-6 text-sm animate-in slide-in-from-top duration-300">
           Could not load bundles: {fetchError}
         </div>
       )}
 
-      {/* Form for entering phone number and selecting bundle */}
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        {/* Phone Number */}
         <FormField
           label="Phone Number"
           name="phoneNumber"
@@ -172,6 +159,7 @@ const EconetData: React.FC = () => {
           }}
         />
 
+        {/* Bundle Selection */}
         <FormField
           label="Select Data Bundle"
           name="bundle"
@@ -180,8 +168,11 @@ const EconetData: React.FC = () => {
           validation={{ required: "Please select a data bundle" }}
         >
           {bundlesLoading ? (
-            <div className="flex justify-center py-4">
-              <div className="w-6 h-6 border-4 border-gray-200 border-t-purple-500 rounded-full animate-spin" />
+            <div className="flex justify-center py-6">
+              <div className="relative">
+                <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin" />
+                <div className="absolute inset-0 w-8 h-8 border-4 border-purple-400/50 rounded-full animate-pulse" />
+              </div>
             </div>
           ) : (
             <select
@@ -189,9 +180,9 @@ const EconetData: React.FC = () => {
                 required: "Please select a data bundle",
               })}
               disabled={bundlesLoading}
-              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors ${
+              className={`w-full px-4 py-3 rounded-xl border ${
                 errors.bundle ? "border-red-500" : "border-gray-300"
-              }`}
+              } focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors duration-300`}
             >
               <option value="">Choose a bundle...</option>
               {dataBundles.map((b) => (
@@ -203,14 +194,19 @@ const EconetData: React.FC = () => {
           )}
         </FormField>
 
-        {/* Pay button with loading state */}
+        {/* Submit Button */}
         <LoadingButton
           isLoading={state.isLoading}
-          className="bg-gradient-to-r from-purple-500 to-purple-600 hover:shadow-lg"
+          className="w-full bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl py-3 font-semibold hover:shadow-xl hover:bg-opacity-90 transition-all duration-300"
         >
-          {state.isLoading
-            ? "Processing..."
-            : `Pay $${getSelectedBundlePrice().toFixed(2)}`}
+          {state.isLoading ? (
+            <div className="flex items-center justify-center gap-2">
+              <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin" />
+              Processing…
+            </div>
+          ) : (
+            `Pay $${getSelectedBundlePrice().toFixed(2)}`
+          )}
         </LoadingButton>
       </form>
     </div>
