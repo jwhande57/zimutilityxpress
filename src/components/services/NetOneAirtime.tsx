@@ -17,17 +17,11 @@ const NetOneAirtime: React.FC = () => {
   const navigate = useNavigate();
   const { state, dispatch } = usePayment();
 
-  // store full stock items (amount + productCode)
   const [stockItems, setStockItems] = useState<
-    {
-      amount: number;
-      productCode: string;
-    }[]
+    { productId: number; productCode: string; amount: number }[]
   >([]);
-
+  const [selectedItem, setSelectedItem] = useState<{ productId: number; productCode: string; amount: number } | null>(null);
   const [amountsLoading, setAmountsLoading] = useState<boolean>(true);
-  const [selectedAmount, setSelectedAmount] = useState<number>(0);
-  const [selectedCode, setSelectedCode] = useState<string>("");
 
   const {
     register,
@@ -37,11 +31,13 @@ const NetOneAirtime: React.FC = () => {
 
   useEffect(() => {
     const fetchStock = async () => {
+      setAmountsLoading(true);
       try {
         const response = await axios.get(`${BASE_URL}/api/check-stock/35`);
         const items = response.data.stock.map((item: any) => ({
-          amount: item.amount,
+          productId: item.productId,
           productCode: item.productCode,
+          amount: item.amount,
         }));
         setStockItems(items);
       } catch (error: any) {
@@ -58,26 +54,38 @@ const NetOneAirtime: React.FC = () => {
   }, [dispatch]);
 
   const onSubmit = async (data: NetOneAirtimeForm) => {
-    if (!selectedAmount || !selectedCode) {
+    if (!selectedItem) {
       dispatch({ type: "SET_ERROR", payload: "Please select an amount" });
       return;
     }
     dispatch({ type: "SET_LOADING", payload: true });
     try {
-      // replace with real API call if available
-      const paymentData = await mockApiCall(data.phoneNumber, selectedAmount);
+      const { productId, productCode, amount } = selectedItem;
+      const requestBody = {
+        usd_amount: amount,
+        productId,
+        productCode,
+        target: data.phoneNumber,
+      };
+      const response = await axios.post(`${BASE_URL}/api/order`, requestBody);
 
       navigate("/make-payment", {
         state: {
           service: "NetOne Airtime",
-          amount: selectedAmount,
-          productCode: selectedCode,
-          customerData: { phoneNumber: data.phoneNumber },
-          paymentData,
+          usd_amount: response.data.usd_amount,
+          customerData: {
+            phoneNumber: response.data.target,
+          },
+          txref: response.data.txref,
+          payment_link: response.data.payment_link,
         },
       });
     } catch (error) {
-      dispatch({ type: "SET_ERROR", payload: "Failed to initiate payment" });
+      let errorMessage = "Failed to initialize payment, please try again";
+      if (axios.isAxiosError(error) && error.response) {
+        errorMessage = error.response.data.message || errorMessage;
+      }
+      dispatch({ type: "SET_ERROR", payload: errorMessage });
     } finally {
       dispatch({ type: "SET_LOADING", payload: false });
     }
@@ -85,7 +93,7 @@ const NetOneAirtime: React.FC = () => {
 
   return (
     <div className="bg-white rounded-2xl shadow-lg p-6">
-      <div className="flex items-center mb-6">
+      <div className="flex items-center mb-66">
         <button
           onClick={() => dispatch({ type: "SELECT_SERVICE", payload: null })}
           className="mr-4 p-2 hover:bg-gray-100 rounded-full"
@@ -122,7 +130,7 @@ const NetOneAirtime: React.FC = () => {
         />
 
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-smecil font-medium text-gray-700 mb-2">
             Select Amount (USD)
           </label>
 
@@ -130,26 +138,25 @@ const NetOneAirtime: React.FC = () => {
             <div className="flex justify-center py-4">
               <div className="w-6 h-6 border-4 border-gray-200 border-t-orange-500 rounded-full animate-spin" />
             </div>
+          ) : stockItems.length === 0 ? (
+            <p className="text-red-500">No airtime amounts available</p>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-              {stockItems.map(({ amount, productCode }) => (
+              {stockItems.map((item) => (
                 <button
-                  key={productCode}
+                  key={item.productCode}
                   type="button"
-                  onClick={() => {
-                    setSelectedAmount(amount);
-                    setSelectedCode(productCode);
-                  }}
+                  onClick={() => setSelectedItem(item)}
                   className={`
                     p-2 sm:p-3 rounded-xl border-2 text-sm font-medium transition-colors
                     ${
-                      selectedAmount === amount
+                      selectedItem?.productCode === item.productCode
                         ? "border-orange-500 bg-orange-50 text-orange-700"
                         : "border-gray-200 text-gray-700 hover:border-gray-300"
                     }
                   `}
                 >
-                  ${amount.toFixed(2)}
+                  ${item.amount.toFixed(2)}
                 </button>
               ))}
             </div>
@@ -162,34 +169,14 @@ const NetOneAirtime: React.FC = () => {
         >
           {state.isLoading
             ? "Processing…"
-            : `Pay $${selectedAmount.toFixed(2)}`}
+            : selectedItem
+              ? `Pay $${selectedItem.amount.toFixed(2)}`
+              : "Select an amount"
+          }
         </LoadingButton>
       </form>
-
     </div>
   );
-};
-
-// Mock API function (move this above or into a utils file)
-const mockApiCall = (
-  phoneNumber: string,
-  amount: number
-): Promise<{
-  txref: string;
-  amountMicro: number;
-  assetId: string;
-  receiveAddr: string;
-}> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        txref: `tx_${Date.now()}`,
-        amountMicro: Math.floor(amount * 1e6),
-        assetId: "USDC",
-        receiveAddr: "0x1234567890abcdef",
-      });
-    }, 1000);
-  });
 };
 
 export default NetOneAirtime;

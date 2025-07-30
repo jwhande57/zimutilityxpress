@@ -6,16 +6,10 @@ import { ArrowLeft, CheckCircle2, XCircle } from "lucide-react";
 
 interface LocationState {
   service: string;
-  amount: number;
-  customerData: Record<string, string>; // Flexible customer data for different services
-  paymentData: {
-    txref: string;
-    amountMicro: number;
-    assetId: string;
-    receiveAddr: string;
-    productId: number;
-    productCode: string;
-  };
+  usd_amount: number;
+  customerData: Record<string, string>;
+  txref: string;
+  payment_link: string;
 }
 
 // Simulated API call
@@ -26,7 +20,7 @@ const mockConfirm = (): Promise<boolean> =>
 
 const PaymentGateway: React.FC = () => {
   const navigate = useNavigate();
-  const { service, amount, customerData, paymentData } = useLocation()
+  const { service, usd_amount, customerData, txref, payment_link } = useLocation()
     .state as LocationState;
 
   console.log(`PaymentGateway: ${JSON.stringify(useLocation().state)}`);
@@ -34,7 +28,7 @@ const PaymentGateway: React.FC = () => {
   const [step, setStep] = useState<"qr" | "confirm">("qr");
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState<boolean | null>(null);
-  const transactionId = paymentData.txref; // Use txref from paymentData
+  const transactionId = txref;
   const [timestamp] = useState(() => new Date().toLocaleString());
 
   const handleConfirm = async () => {
@@ -51,9 +45,9 @@ const PaymentGateway: React.FC = () => {
 
   const qrValue = JSON.stringify({
     service,
-    amount,
+    usd_amount,
     customerData,
-    paymentData,
+    txref,
   });
 
   return (
@@ -87,7 +81,12 @@ const PaymentGateway: React.FC = () => {
                   Or{" "}
                   <button
                     className="text-green-600 underline"
-                    onClick={() => window.open(`algorand://CA2IONEBEBM3CCE53CTUCOU6JHNFZSJKDTIHRDOTLU3AGNO6XULN2YFGUQ?amount=2000000&asset=732589810&note=tx_test_note_jerald`, "_blank")}
+                    onClick={() =>
+                      window.open(
+                        `${payment_link}`,
+                        "_blank"
+                      )
+                    }
                   >
                     open your wallet
                   </button>
@@ -126,7 +125,7 @@ const PaymentGateway: React.FC = () => {
 
                   <div className="border-t pt-4 flex justify-between items-center text-base font-semibold">
                     <span className="text-gray-800">Total Amount</span>
-                    <span className="text-green-600">${amount.toFixed(2)}</span>
+                    <span className="text-green-600">${usd_amount.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -201,7 +200,7 @@ const PaymentGateway: React.FC = () => {
                                 Amount Paid:
                               </span>
                               <span className="font-medium text-green-600">
-                                ${amount.toFixed(2)}
+                                ${usd_amount.toFixed(2)}
                               </span>
                             </div>
                             <div className="flex justify-between">
@@ -247,7 +246,7 @@ const PaymentGateway: React.FC = () => {
             </>
           )}
 
-         {/* <p className="text-xs text-gray-400 text-center mt-6">
+          {/* <p className="text-xs text-gray-400 text-center mt-6">
             This is a simulated payment process. In production, this would
             connect to a real payment gateway.
           </p>*/}

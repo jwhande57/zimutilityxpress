@@ -1,30 +1,21 @@
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
-import { usePayment } from '../../contexts/PaymentContext';
-import { validateMeterNumber, validateZimMobileNumber } from '../../utils/validators';
-import FormField from '../FormField';
-import LoadingButton from '../LoadingButton';
-import { Zap, ArrowLeft } from 'lucide-react';
+import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
+import { usePayment } from "../../contexts/PaymentContext";
+import { validateMeterNumber, validateZimMobileNumber } from "../../utils/validators";
+import FormField from "../FormField";
+import LoadingButton from "../LoadingButton";
+import { Zap, ArrowLeft } from "lucide-react";
+import { BASE_URL } from "../../utils/api";
+import axios from "axios";
 
 interface ZESAElectricityForm {
   meterNumber: string;
   phoneNumber: string;
 }
 
-// Mock API function to simulate payment initiation
-const mockApiCall = (meterNumber: string, phoneNumber: string, amount: number) => {
-  return new Promise<{ txref: string; amountMicro: number; assetId: string; receiveAddr: string }>((resolve) => {
-    setTimeout(() => {
-      resolve({
-        txref: `tx_${Date.now()}`,
-        amountMicro: Math.floor(amount * 1e6),
-        assetId: 'USDC',
-        receiveAddr: '0x1234567890abcdef',
-      });
-    }, 1000);
-  });
-};
+const ZESA_PRODUCT_ID = 50; // Replace with actual product ID
+const ZESA_PRODUCT_CODE = "ZESA"; // Replace with actual product code
 
 const ZESAElectricity: React.FC = () => {
   const navigate = useNavigate();
@@ -35,22 +26,37 @@ const ZESAElectricity: React.FC = () => {
   const quickAmounts = [5, 10, 20, 50, 100];
 
   const onSubmit = async (data: ZESAElectricityForm) => {
-    dispatch({ type: 'SET_LOADING', payload: true });
+    dispatch({ type: "SET_LOADING", payload: true });
     try {
-      const paymentData = await mockApiCall(data.meterNumber, data.phoneNumber, selectedAmount);
+      const amount = selectedAmount;
+      const requestBody = {
+        usd_amount: amount,
+        productId: ZESA_PRODUCT_ID,
+        productCode: ZESA_PRODUCT_CODE,
+        target: data.meterNumber,
+      };
+      const response = await axios.post(`${BASE_URL}/api/order`, requestBody);
 
-      navigate('/make-payment', {
+      navigate("/make-payment", {
         state: {
-          service: 'ZESA Electricity',
-          amount: selectedAmount,
-          customerData: { meterNumber: data.meterNumber, phoneNumber: data.phoneNumber },
-          paymentData,
+          service: "ZESA Electricity",
+          usd_amount: response.data.usd_amount,
+          customerData: {
+            meterNumber: response.data.target,
+            phoneNumber: data.phoneNumber,
+          },
+          txref: response.data.txref,
+          payment_link: response.data.payment_link,
         },
       });
     } catch (error) {
-      dispatch({ type: 'SET_ERROR', payload: 'Failed to initiate payment' });
+      let errorMessage = "Failed to initialize payment, please try again";
+      if (axios.isAxiosError(error) && error.response) {
+        errorMessage = error.response.data.message || errorMessage;
+      }
+      dispatch({ type: "SET_ERROR", payload: errorMessage });
     } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
+      dispatch({ type: "SET_LOADING", payload: false });
     }
   };
 
@@ -58,7 +64,7 @@ const ZESAElectricity: React.FC = () => {
     <div className="bg-white rounded-2xl shadow-lg p-6">
       <div className="flex items-center mb-6">
         <button
-          onClick={() => dispatch({ type: 'SELECT_SERVICE', payload: null })}
+          onClick={() => dispatch({ type: "SELECT_SERVICE", payload: null })}
           className="mr-4 p-2 hover:bg-gray-100 rounded-full"
         >
           <ArrowLeft size={18} />
@@ -83,8 +89,8 @@ const ZESAElectricity: React.FC = () => {
           register={register}
           error={errors.meterNumber}
           validation={{
-            required: 'Meter number is required',
-            validate: v => validateMeterNumber(v) || 'Please enter a valid 11-digit meter number',
+            required: "Meter number is required",
+            validate: (v) => validateMeterNumber(v) || "Please enter a valid 11-digit meter number",
           }}
         />
 
@@ -95,8 +101,9 @@ const ZESAElectricity: React.FC = () => {
           register={register}
           error={errors.phoneNumber}
           validation={{
-            required: 'Phone number is required',
-            validate: v => validateZimMobileNumber(v) || 'Please enter a valid Zimbabwean mobile number',
+            required: "Phone number is required",
+            validate: (v) =>
+              validateZimMobileNumber(v) || "Please enter a valid Zimbabwean mobile number",
           }}
         />
 
@@ -113,8 +120,8 @@ const ZESAElectricity: React.FC = () => {
                 onClick={() => setSelectedAmount(amt)}
                 className={`p-3 rounded-xl border-2 text-sm font-medium transition-colors ${
                   selectedAmount === amt
-                    ? 'border-yellow-500 bg-yellow-50 text-yellow-700'
-                    : 'border-gray-200 text-gray-700 hover:border-gray-300'
+                    ? "border-yellow-500 bg-yellow-50 text-yellow-700"
+                    : "border-gray-200 text-gray-700 hover:border-gray-300"
                 }`}
               >
                 ${amt}
@@ -141,7 +148,7 @@ const ZESAElectricity: React.FC = () => {
           isLoading={state.isLoading}
           className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 hover:shadow-lg"
         >
-          {state.isLoading ? 'Processing...' : `Pay $${selectedAmount.toFixed(2)}`}
+          {state.isLoading ? "Processing..." : `Pay $${selectedAmount.toFixed(2)}`}
         </LoadingButton>
       </form>
     </div>

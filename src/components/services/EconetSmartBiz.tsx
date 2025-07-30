@@ -15,29 +15,11 @@ interface EconetDataForm {
 }
 
 interface BundleOption {
-  productId: number; // ← new
+  productId: number;
   id: string; // productCode
   name: string;
   price: number;
 }
-
-const mockApiCall = (phoneNumber: string, bundle: string, amount: number) => {
-  return new Promise<{
-    txref: string;
-    amountMicro: number;
-    assetId: string;
-    receiveAddr: string;
-  }>((resolve) => {
-    setTimeout(() => {
-      resolve({
-        txref: `tx_${Date.now()}`,
-        amountMicro: Math.floor(amount * 1e6),
-        assetId: "USDC",
-        receiveAddr: "0x1234567890abcdef",
-      });
-    }, 1000);
-  });
-};
 
 const EconetSmartBiz: React.FC = () => {
   const navigate = useNavigate();
@@ -91,28 +73,38 @@ const EconetSmartBiz: React.FC = () => {
     dispatch({ type: "SET_LOADING", payload: true });
     try {
       const bundle = dataBundles.find((b) => b.id === data.bundle);
-      const amount = bundle?.price ?? 0;
-      const paymentData = await mockApiCall(
-        data.phoneNumber,
-        data.bundle,
-        amount
-      );
+      if (!bundle) {
+        throw new Error("Selected bundle not found");
+      }
+      const amount = bundle.price;
+
+      const requestBody = {
+        usd_amount: amount,
+        productId: bundle.productId,
+        productCode: bundle.id,
+        target: data.phoneNumber,
+      };
+
+      const response = await axios.post(`${BASE_URL}/api/order`, requestBody);
 
       navigate("/make-payment", {
         state: {
           service: "Econet SmartBiz",
-          amount,
+          usd_amount: response.data.usd_amount,
           customerData: {
-            phoneNumber: data.phoneNumber,
-            bundle: bundle?.name ?? data.bundle,
+            phoneNumber: response.data.target,
+            bundle: bundle.name,
           },
-          paymentData,
-          productId: bundle?.productId,
-          productCode: bundle?.id,
+          txref: response.data.txref,
+          payment_link: response.data.payment_link,
         },
       });
     } catch (error) {
-      dispatch({ type: "SET_ERROR", payload: "Failed to initiate payment" });
+      let errorMessage = "Failed to initialize payment, please try again";
+      if (axios.isAxiosError(error) && error.response) {
+        errorMessage = error.response.data.message || errorMessage;
+      }
+      dispatch({ type: "SET_ERROR", payload: errorMessage });
     } finally {
       dispatch({ type: "SET_LOADING", payload: false });
     }

@@ -19,34 +19,11 @@ interface TelOneBroadbandForm {
 }
 
 interface BundleOption {
-  productId: number; // ← new
+  productId: number;
   id: string; // productCode
   name: string;
   price: number;
 }
-
-const mockApiCall = (
-  accountNumber: string,
-  bundle: string,
-  phoneNumber: string,
-  amount: number
-) => {
-  return new Promise<{
-    txref: string;
-    amountMicro: number;
-    assetId: string;
-    receiveAddr: string;
-  }>((resolve) => {
-    setTimeout(() => {
-      resolve({
-        txref: `tx_${Date.now()}`,
-        amountMicro: Math.floor(amount * 1e6),
-        assetId: "USDC",
-        receiveAddr: "0x1234567890abcdef",
-      });
-    }, 1000);
-  });
-};
 
 const TelOneBroadband: React.FC = () => {
   const navigate = useNavigate();
@@ -99,31 +76,40 @@ const TelOneBroadband: React.FC = () => {
   const onSubmit = async (data: TelOneBroadbandForm) => {
     dispatch({ type: "SET_LOADING", payload: true });
     try {
-      const bundleInfo = bundles.find((b) => b.id === data.bundle);
-      const amount = bundleInfo?.price ?? 0;
-      const paymentData = await mockApiCall(
-        data.accountNumber,
-        data.bundle,
-        data.phoneNumber,
-        amount
-      );
+      const bundle = bundles.find((b) => b.id === data.bundle);
+      if (!bundle) {
+        throw new Error("Selected bundle not found");
+      }
+      const amount = bundle.price;
+
+      const requestBody = {
+        usd_amount: amount,
+        productId: bundle.productId,
+        productCode: bundle.id,
+        target: data.accountNumber, // Assuming target is accountNumber
+      };
+
+      const response = await axios.post(`${BASE_URL}/api/order`, requestBody);
 
       navigate("/make-payment", {
         state: {
           service: "TelOne Broadband",
-          amount,
+          usd_amount: response.data.usd_amount,
           customerData: {
-            accountNumber: data.accountNumber,
-            bundle: bundleInfo?.name ?? data.bundle,
+            accountNumber: response.data.target,
+            bundle: bundle.name,
             phoneNumber: data.phoneNumber,
           },
-          paymentData,
-          productId: bundleInfo?.productId,
-          productCode: bundleInfo?.id,
+          txref: response.data.txref,
+          payment_link: response.data.payment_link,
         },
       });
     } catch (error) {
-      dispatch({ type: "SET_ERROR", payload: "Failed to initiate payment" });
+      let errorMessage = "Failed to initialize payment, please try again";
+      if (axios.isAxiosError(error) && error.response) {
+        errorMessage = error.response.data.message || errorMessage;
+      }
+      dispatch({ type: "SET_ERROR", payload: errorMessage });
     } finally {
       dispatch({ type: "SET_LOADING", payload: false });
     }
