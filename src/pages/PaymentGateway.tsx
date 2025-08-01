@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import QRCode from "react-qr-code";
 import LoadingButton from "../components/LoadingButton";
 import { ArrowLeft, CheckCircle2, XCircle } from "lucide-react";
+import axios from "axios";
+import { BASE_URL } from "../utils/api";
 
 interface LocationState {
   service: string;
@@ -12,18 +14,37 @@ interface LocationState {
   payment_link: string;
 }
 
-// Simulated API call
-const mockConfirm = (): Promise<boolean> =>
-  new Promise((resolve) =>
-    setTimeout(() => resolve(Math.random() < 0.7), 2000)
-  );
+// Confirm payment using backend API
+const confirmPayment = async (
+  txref: string
+): Promise<{
+  success: boolean;
+  status: string;
+  message: string;
+}> => {
+  try {
+    const res = await axios.post(`${BASE_URL}/api/payment`, { txref });
+    return res.data;
+  } catch (error: any) {
+    if (error.response && error.response.data) {
+      return {
+        success: false,
+        status: error.response.status.toString(),
+        message: error.response.data.error || "Unknown error",
+      };
+    }
+    return {
+      success: false,
+      status: "network_error",
+      message: "Network error. Please try again.",
+    };
+  }
+};
 
 const PaymentGateway: React.FC = () => {
   const navigate = useNavigate();
-  const { service, usd_amount, customerData, txref, payment_link } = useLocation()
-    .state as LocationState;
-
-  console.log(`PaymentGateway: ${JSON.stringify(useLocation().state)}`);
+  const { service, usd_amount, customerData, txref, payment_link } =
+    useLocation().state as LocationState;
 
   const [step, setStep] = useState<"qr" | "confirm">("qr");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -31,24 +52,37 @@ const PaymentGateway: React.FC = () => {
   const transactionId = txref;
   const [timestamp] = useState(() => new Date().toLocaleString());
 
-  const handleConfirm = async () => {
+  const handleConfirm = () => {
     setIsProcessing(true);
-    const result = await mockConfirm();
-    setPaymentSuccess(result);
-    setIsProcessing(false);
+    setStep("confirm");
+
+    const startTime = Date.now();
+    const maxWaitTime = 20000; // 20 seconds
+
+    const poll = async () => {
+      const result = await confirmPayment(txref);
+
+      if (result.success && result.status === "confirmed") {
+        setPaymentSuccess(true);
+        setIsProcessing(false);
+      } else if (result.success && result.status === "already_confirmed") {
+        setPaymentSuccess(true);
+        setIsProcessing(false);
+      } else if (Date.now() - startTime >= maxWaitTime) {
+        setPaymentSuccess(false);
+        setIsProcessing(false);
+      } else {
+        setTimeout(poll, 2000); // Retry in 2 seconds
+      }
+    };
+
+    poll();
   };
 
   const handleReset = () => {
     setStep("qr");
     setPaymentSuccess(null);
   };
-
-  const qrValue = JSON.stringify({
-    service,
-    usd_amount,
-    customerData,
-    txref,
-  });
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
@@ -75,18 +109,13 @@ const PaymentGateway: React.FC = () => {
               <div className="text-center mb-6">
                 <h2 className="text-gray-800 font-medium mb-2">Scan to Pay</h2>
                 <div className="bg-white p-4 rounded-xl shadow-inner inline-block">
-                  <QRCode value={qrValue} size={140} />
+                  <QRCode value={payment_link} size={140} />
                 </div>
                 <p className="mt-2 text-sm text-gray-500">
                   Or{" "}
                   <button
                     className="text-green-600 underline"
-                    onClick={() =>
-                      window.open(
-                        `${payment_link}`,
-                        "_blank"
-                      )
-                    }
+                    onClick={() => window.open(`${payment_link}`, "_blank")}
                   >
                     open your wallet
                   </button>
@@ -125,7 +154,9 @@ const PaymentGateway: React.FC = () => {
 
                   <div className="border-t pt-4 flex justify-between items-center text-base font-semibold">
                     <span className="text-gray-800">Total Amount</span>
-                    <span className="text-green-600">${usd_amount.toFixed(2)}</span>
+                    <span className="text-green-600">
+                      ${usd_amount.toFixed(2)}
+                    </span>
                   </div>
                 </div>
               </div>
