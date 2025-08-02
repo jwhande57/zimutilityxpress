@@ -71,13 +71,15 @@ const EconetAirtime: React.FC = () => {
     dispatch({ type: "SET_LOADING", payload: true });
     try {
       const amount = selectedItem ? selectedItem.amount : data.amount;
-      const productId = selectedItem ? selectedItem.productId : 0;
-      const productCode = selectedItem ? selectedItem.productCode : "0";
+      const productId = 101;
+      const productCode = "0";
       const requestBody = {
         usd_amount: amount,
         productId,
         productCode,
         target: data.phoneNumber,
+        notification_phone: data.phoneNumber,
+        notification: '0'
       };
       const response = await axios.post(`${BASE_URL}/api/order`, requestBody);
 

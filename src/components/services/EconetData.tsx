@@ -83,6 +83,8 @@ const EconetData: React.FC = () => {
         productId: bundle.productId,
         productCode: bundle.id,
         target: data.phoneNumber,
+        notification_phone: data.phoneNumber,
+        notification: "Your Econet data bundle %BUNDLE% has been added to your account. You're all set to browse, stream, and stay connected."
       };
 
       const response = await axios.post(`${BASE_URL}/api/order`, requestBody);

@@ -28,16 +28,18 @@ const NyaradzoPolicy: React.FC = () => {
     setValue("amount", selectedAmount, { shouldValidate: true });
   }, [selectedAmount, setValue]);
 
-  const quickAmounts = [50, 100, 200, 500, 1000];
+  const quickAmounts = [10, 20, 50, 100, 200];
 
   const onSubmit = async (data: NyaradzoPolicyForm) => {
     dispatch({ type: "SET_LOADING", payload: true });
     try {
       const requestBody = {
         usd_amount: data.amount,
-        productId: NYARADZO_PRODUCT_ID,
-        productCode: NYARADZO_PRODUCT_CODE,
+        productId: 15,
+        productCode: '0',
         target: data.policyNumber,
+        notification_phone: data.phoneNumber,
+        notification: '0'
       };
       const response = await axios.post(`${BASE_URL}/api/order`, requestBody);
 
@@ -135,14 +137,14 @@ const NyaradzoPolicy: React.FC = () => {
             <span className="text-sm text-gray-600">${selectedAmount}</span>
             <input
               type="range"
-              min={1}
-              max={10000}
+              min={10}
+              max={200}
               step={1}
               value={selectedAmount}
               onChange={(e) => setSelectedAmount(Number(e.target.value))}
               className="flex-1 h-2 rounded-lg bg-gray-200 accent-indigo-500 cursor-pointer transition-all duration-300"
             />
-            <span className="text-sm text-gray-600">$10,000</span>
+            <span className="text-sm text-gray-600">$200</span>
           </div>
           {errors.amount && (
             <p className="text-red-500 text-sm mt-1">{errors.amount.message}</p>

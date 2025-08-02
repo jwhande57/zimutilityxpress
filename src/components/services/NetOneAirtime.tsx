@@ -19,9 +19,11 @@ const NetOneAirtime: React.FC = () => {
   const [stockItems, setStockItems] = useState<
     { productId: number; productCode: string; amount: number }[]
   >([]);
-  const [selectedItem, setSelectedItem] = useState<
-    { productId: number; productCode: string; amount: number } | null
-  >(null);
+  const [selectedItem, setSelectedItem] = useState<{
+    productId: number;
+    productCode: string;
+    amount: number;
+  } | null>(null);
   const [amountsLoading, setAmountsLoading] = useState<boolean>(true);
 
   const {
@@ -34,7 +36,7 @@ const NetOneAirtime: React.FC = () => {
     const fetchStock = async () => {
       setAmountsLoading(true);
       try {
-        const response = await axios.get(`${BASE_URL}/api/check-stock/35`);
+        const response = await axios.get(`${BASE_URL}/api/check-stock/102`);
         const items = response.data.stock.map((item: any) => ({
           productId: item.productId,
           productCode: item.productCode,
@@ -67,6 +69,8 @@ const NetOneAirtime: React.FC = () => {
         productId,
         productCode,
         target: data.phoneNumber,
+        notification_phone: data.phoneNumber,
+        notification: "0",
       };
       const response = await axios.post(`${BASE_URL}/api/order`, requestBody);
 
@@ -100,7 +104,10 @@ const NetOneAirtime: React.FC = () => {
           onClick={() => dispatch({ type: "SELECT_SERVICE", payload: null })}
           className="group flex items-center gap-2 text-gray-700 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-full px-3 py-2 transition-all duration-300"
         >
-          <ArrowLeft size={18} className="transition-transform duration-300 group-hover:-translate-x-1" />
+          <ArrowLeft
+            size={18}
+            className="transition-transform duration-300 group-hover:-translate-x-1"
+          />
           <span className="text-sm font-medium hidden sm:inline">Back</span>
         </button>
         <div className="ml-4">

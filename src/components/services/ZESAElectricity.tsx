@@ -31,9 +31,12 @@ const ZESAElectricity: React.FC = () => {
       const amount = selectedAmount;
       const requestBody = {
         usd_amount: amount,
-        productId: ZESA_PRODUCT_ID,
-        productCode: ZESA_PRODUCT_CODE,
+        productId: 41,
+        productCode: '0',
         target: data.meterNumber,
+        notification_phone: data.phoneNumber,
+        notification: "Your ZESA token %ACCESSNAME%: %RECHARGEITEM% valued at $%AMOUNT% has been delivered."
+
       };
       const response = await axios.post(`${BASE_URL}/api/order`, requestBody);
 
@@ -120,7 +123,7 @@ const ZESAElectricity: React.FC = () => {
         {/* Amount Selection */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Amount (USD) <span className="text-gray-500">(Min $5, Max $500)</span>
+            Amount (USD) <span className="text-gray-500"></span>
           </label>
           <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 mb-4">
             {quickAmounts.map((amt) => (
@@ -146,13 +149,13 @@ const ZESAElectricity: React.FC = () => {
             <input
               type="range"
               min={5}
-              max={500}
+              max={100}
               step={1}
               value={selectedAmount}
               onChange={(e) => setSelectedAmount(Number(e.target.value))}
               className="flex-1 h-2 rounded-lg bg-gray-200 accent-yellow-500 cursor-pointer transition-all duration-300"
             />
-            <span className="text-sm text-gray-600">$500</span>
+            <span className="text-sm text-gray-600">$100</span>
           </div>
         </div>
 

@@ -84,6 +84,8 @@ const TelOneBroadband: React.FC = () => {
         productId: bundle.productId,
         productCode: bundle.id,
         target: data.accountNumber,
+        notification_phone: data.phoneNumber,
+        notification: "Your TelOne Broadband bundle %BUNDLE% has been added to your account. You're all set to browse, stream, and stay connected.",
       };
 
       const response = await axios.post(`${BASE_URL}/api/order`, requestBody);

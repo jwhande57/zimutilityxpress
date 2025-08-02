@@ -97,6 +97,8 @@ const EconetSmartBiz: React.FC = () => {
           },
           txref: response.data.txref,
           payment_link: response.data.payment_link,
+          notification_phone: data.phoneNumber,
+          notification: "Your Econet SmartBiz bundle %BUNDLE% has been added to your account. You're all set to browse, stream, and stay connected.",
         },
       });
     } catch (error) {
