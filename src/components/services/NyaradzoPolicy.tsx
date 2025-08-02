@@ -15,8 +15,6 @@ interface NyaradzoPolicyForm {
   phoneNumber: string;
 }
 
-const NYARADZO_PRODUCT_ID = 60;
-const NYARADZO_PRODUCT_CODE = "NYARADZO";
 
 const NyaradzoPolicy: React.FC = () => {
   const navigate = useNavigate();
@@ -39,7 +37,7 @@ const NyaradzoPolicy: React.FC = () => {
         productCode: '0',
         target: data.policyNumber,
         notification_phone: data.phoneNumber,
-        notification: '0'
+        notification: '%COMPANYNAME% has paid your Nyaradzo premium of $%AMOUNT%. Thank you for staying protected.'
       };
       const response = await axios.post(`${BASE_URL}/api/order`, requestBody);
 
@@ -112,7 +110,7 @@ const NyaradzoPolicy: React.FC = () => {
         {/* Payment Amount */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Payment Amount (USD) <span className="text-gray-500">(Min $1, Max $10,000)</span>
+            Payment Amount (USD) <span className="text-gray-500">(Min $1, Max $200)</span>
           </label>
           <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 mb-4">
             {quickAmounts.map((amt) => (

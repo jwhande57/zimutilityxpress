@@ -79,7 +79,7 @@ const EconetAirtime: React.FC = () => {
         productCode,
         target: data.phoneNumber,
         notification_phone: data.phoneNumber,
-        notification: '0'
+        notification: '%COMPANYNAME% just sent you $%AMOUNT%. Your new balance is $%BALANCE%.'
       };
       const response = await axios.post(`${BASE_URL}/api/order`, requestBody);
 
